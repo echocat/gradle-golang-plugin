@@ -1,0 +1,34 @@
+apply plugin: 'org.echocat.golang'
+
+buildscript {
+    repositories {
+        mavenLocal()
+    }
+    dependencies {
+        classpath "org.echocat.gradle.plugins:gradle-golang-plugin:1.0.0-SNAPSHOT"
+    }
+}
+
+group 'github.com/blaubaer/gradletest'
+version '1.0.0-SNAPSHOT'
+
+dependencies {
+    build 'github.com/eknkc/dateformat:master'
+    build 'github.com/emicklei/go-restful'
+    build 'github.com/russross/blackfriday'
+    build 'github.com/tdewolff/minify'
+    build 'github.com/codegangsta/cli'
+    build 'gopkg.in/blaubaer/goyaml.v66'
+    build 'gopkg.in/natefinch/lumberjack.v2'
+    build 'gopkg.in/robfig/cron.v2'
+    build 'gopkg.in/jmcvetta/napping.v3'
+    test 'gopkg.in/check.v1'
+}
+
+golang {
+    packageName = 'github.com/echocat/gradle-golang-plugin/samples/simple-project'
+
+    build {
+        useTemporaryGopath = true
+    }
+}
