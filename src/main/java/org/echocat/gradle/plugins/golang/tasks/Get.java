@@ -24,13 +24,13 @@ import java.util.Map.Entry;
 import static java.io.File.separatorChar;
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.Files.walkFileTree;
-import static org.echocat.gradle.plugins.golang.tasks.Dependencies.DependencyDirType.*;
+import static org.echocat.gradle.plugins.golang.tasks.Get.DependencyDirType.*;
 
-public class Dependencies extends GolangTask {
+public class Get extends GolangTask {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Dependencies.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Get.class);
 
-    public Dependencies() {
+    public Get() {
         dependsOn("validate", "prepare-toolchain");
     }
 
