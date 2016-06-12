@@ -28,36 +28,44 @@ public class PrepareToolchain extends GolangTask {
     public void run() throws Exception {
         downloadBootstrapIfRequired();
         downloadSourcesIfRequired();
-        buildHostIfRequired();
-        buildTargetsIfRequired();
+        if (!buildHostIfRequired() && !buildTargetsIfRequired()) {
+            getState().upToDate();
+        }
     }
 
-    protected void buildHostIfRequired() throws Exception {
+    protected boolean buildHostIfRequired() throws Exception {
         final ToolchainSettings toolchain = toolchain();
         final String expectedVersion = toolchain.getGoversion();
         String version = goBinaryVersion();
+        boolean build = false;
         if (version == null) {
             build(Platform.currentPlatform(), true);
             version = goBinaryVersion();
+            build = true;
         }
         if (!Objects.equals(version, expectedVersion)) {
             throw new IllegalStateException("go SDK in " + toolchain.getGoroot() + " has expected of version " + expectedVersion + " but it is " + version + ".");
         }
+        return build;
     }
 
-    protected void buildTargetsIfRequired() throws Exception {
+    protected boolean buildTargetsIfRequired() throws Exception {
         final GolangSettings settings = settings();
         final ToolchainSettings toolchain = toolchain();
         final List<Platform> platforms = settings.getParsedPlatforms();
         if (platforms.isEmpty()) {
             throw new IllegalArgumentException("There are no platforms specified.");
         }
+        boolean atLeastOneBuild = false;
         for (final Platform platform : platforms) {
-            build(platform, toolchain.isForceBuildToolchain());
+            if (build(platform, toolchain.isForceBuildToolchain())) {
+                atLeastOneBuild = true;
+            }
         }
+        return atLeastOneBuild;
     }
 
-    protected void build(Platform platform, boolean force) throws Exception {
+    protected boolean build(Platform platform, boolean force) throws Exception {
         final ToolchainSettings toolchain = toolchain();
         final String goos = platform.getOperatingSystem().getNameInGo();
         final String goarch = platform.getArchitecture().getNameInGo();
@@ -83,7 +91,9 @@ public class PrepareToolchain extends GolangTask {
 
             writeStringToFile(buildMarker, "");
             LOGGER.info("Going to build go toolchain for {}... DONE!", platform);
+            return true;
         }
+        return false;
     }
 
     protected void downloadSourcesIfRequired() {

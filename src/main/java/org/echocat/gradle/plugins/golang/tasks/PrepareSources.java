@@ -28,6 +28,7 @@ public class PrepareSources extends GolangTask {
     public void run()  throws  Exception {
         final GolangSettings settings = settings();
         final BuildSettings build = build();
+        boolean atLeastOneCopied = false;
         if (build.isUseTemporaryGopath()) {
             LOGGER.debug("Prepare GOPATH ({})...", build.getGopath());
             final File projectBasedir = settings.projectBasedir();
@@ -44,6 +45,7 @@ public class PrepareSources extends GolangTask {
                 if (!targetFile.exists()
                     || sourceFile.length() != targetFile.length()
                     || sourceFile.lastModified() != targetFile.lastModified()) {
+                    atLeastOneCopied = true;
                     LOGGER.debug("* {}", file);
                     forceMkdir(targetFile.getParentFile());
                     try (final InputStream is = new FileInputStream(sourceFile)) {
@@ -55,6 +57,11 @@ public class PrepareSources extends GolangTask {
                     targetFile.setLastModified(sourceFile.lastModified());
                 }
             }
+            if (!atLeastOneCopied) {
+                getState().upToDate();
+            }
+        } else {
+            getState().skipped("SKIPPED");
         }
     }
 

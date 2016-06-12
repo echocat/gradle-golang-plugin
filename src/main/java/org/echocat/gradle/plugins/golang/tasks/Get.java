@@ -45,6 +45,7 @@ public class Get extends GolangTask {
         final File dependencyCacheDirectory = dependencies.getDependencyCache();
         final Set<String> knownDependencyIds = new HashSet<>();
 
+        boolean atLeastOneUpdated = false;
         for (final GolangDependency dependency : getDependencies()) {
             knownDependencyIds.add(dependency.getGroup());
             final RawVcsReference reference = dependency.toRawVcsReference();
@@ -60,13 +61,15 @@ public class Get extends GolangTask {
                 final VcsFullReference fullReference = repository.updateIfRequired(dependencyCacheDirectory);
                 if (fullReference != null) {
                     LOGGER.info("Dependency {} updated.", reference);
+                    atLeastOneUpdated = true;
                 } else {
                     LOGGER.debug("No update required for dependency {}.", reference);
                 }
             }
         }
-
-        doDeleteUnknownDependenciesIfRequired(dependencyCacheDirectory.toPath(), knownDependencyIds);
+        if (!atLeastOneUpdated && !doDeleteUnknownDependenciesIfRequired(dependencyCacheDirectory.toPath(), knownDependencyIds)) {
+            getState().upToDate();
+        }
     }
 
     @Nonnull
@@ -85,13 +88,14 @@ public class Get extends GolangTask {
         return result;
     }
 
-    protected void doDeleteUnknownDependenciesIfRequired(@Nonnull Path root, @Nonnull Set<String> knownDependencyIds) throws IOException {
+    protected boolean doDeleteUnknownDependenciesIfRequired(@Nonnull Path root, @Nonnull Set<String> knownDependencyIds) throws IOException {
         if (settings().dependencies().isDeleteUnknownDependencies()) {
-            doDeleteUnknownDependencies(root, knownDependencyIds);
+            return doDeleteUnknownDependencies(root, knownDependencyIds);
         }
+        return false;
     }
 
-    protected void doDeleteUnknownDependencies(@Nonnull Path root, @Nonnull Set<String> knownDependencyIds) throws IOException {
+    protected boolean doDeleteUnknownDependencies(@Nonnull Path root, @Nonnull Set<String> knownDependencyIds) throws IOException {
         final Collection<Path> paths = collectUnknownDependencyDirectories(root, knownDependencyIds);
         for (final Path path : paths) {
             LOGGER.debug("Deleting unknown dependency in {}...", path);
@@ -102,6 +106,7 @@ public class Get extends GolangTask {
             }
             LOGGER.info("Unknown dependency in {} deleted.", path);
         }
+        return !paths.isEmpty();
     }
 
     @Nonnull
