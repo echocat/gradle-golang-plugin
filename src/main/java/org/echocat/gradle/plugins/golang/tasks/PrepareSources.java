@@ -9,16 +9,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.commons.io.FileUtils.forceMkdir;
 
 public class PrepareSources extends GolangTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PrepareSources.class);
-
-    private final String[] _sourcesIncludes = null;
-    private final String[] _sourcesExcludes = {
-        ".git/**", ".svn/**", "build.gradle", "build/**", ".gradle/**", "gradle/**"
-    };
 
     public PrepareSources() {
         dependsOn("validate");
@@ -26,18 +22,18 @@ public class PrepareSources extends GolangTask {
 
     @Override
     public void run()  throws  Exception {
-        final GolangSettings settings = settings();
+        final GolangSettings settings = golang();
         final BuildSettings build = build();
         boolean atLeastOneCopied = false;
-        if (build.isUseTemporaryGopath()) {
+        if (TRUE.equals(build.getUseTemporaryGopath())) {
             LOGGER.debug("Prepare GOPATH ({})...", build.getGopath());
             final File projectBasedir = settings.projectBasedir();
-            final File packagePath = settings.packagePath();
+            final File packagePath = settings.packagePathFor(build.getGopath());
 
             final DirectoryScanner scanner = new DirectoryScanner();
             scanner.setBasedir(projectBasedir);
-            scanner.setIncludes(_sourcesIncludes);
-            scanner.setExcludes(_sourcesExcludes);
+            scanner.setIncludes(build.getIncludes());
+            scanner.setExcludes(build.getExcludes());
             scanner.scan();
             for (final String file : scanner.getIncludedFiles()) {
                 final File sourceFile = new File(projectBasedir, file);

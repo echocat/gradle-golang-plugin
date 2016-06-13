@@ -1,15 +1,19 @@
 package org.echocat.gradle.plugins.golang.model;
 
+import groovy.lang.Closure;
+import org.echocat.gradle.plugins.golang.utils.BeanUtils;
 import org.gradle.api.Project;
+import org.gradle.util.ConfigureUtil;
 
 import javax.annotation.Nonnull;
+import javax.inject.Inject;
 import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
+import java.util.Map.Entry;
 
 import static java.io.File.pathSeparator;
 import static java.io.File.separator;
@@ -19,14 +23,18 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 public class BuildSettings {
 
+    @Nonnull
+    private final Project _project;
     private File _gopath;
-    private boolean _useTemporaryGopath;
+    private Boolean _useTemporaryGopath;
+    private String[] _includes;
+    private String[] _excludes;
 
     /**
      * Force rebuilding of packages that are already up-to-date.
      */
     @Argument("-a")
-    private boolean _forceRebuild;
+    private Boolean _forceRebuild;
     /**
      * The number of programs, such as build commands or test binaries, that can be run in parallel.
      * The default is the number of CPUs available, except on darwin/arm which defaults to 1.
@@ -38,22 +46,22 @@ public class BuildSettings {
      * Supported only on linux/amd64, freebsd/amd64, darwin/amd64 and windows/amd64.
      */
     @Argument("-race")
-    private boolean _raceDetection;
+    private Boolean _raceDetection;
     /**
      * Enable interoperation with memory sanitizer.
      * Supported only on linux/amd64, and only with Clang/LLVM as the host C compiler.
      */
     @Argument("-msan")
-    private boolean _interoperationWithMemorySanitizer;
+    private Boolean _interoperationWithMemorySanitizer;
     @Argument("-v")
-    private boolean _printCompiledPackages;
+    private Boolean _printCompiledPackages;
     /**
      * Print the name of the temporary work directory and do not delete it when exiting.
      */
     @Argument("-work")
-    private boolean _printWorkDirectory;
+    private Boolean _printWorkDirectory;
     @Argument("-x")
-    private boolean _printCommands;
+    private Boolean _printCommands;
     @Argument("-asmflags")
     private String _asmFlags;
     @Argument("-buildmode")
@@ -66,7 +74,7 @@ public class BuildSettings {
     private String _gcFlags;
     private String _ldFlags;
     @Argument("-linkshared")
-    private boolean _linkShared;
+    private Boolean _linkShared;
     @Argument("-pkgdir")
     private File _pkgDir;
     @Argument("-tags")
@@ -75,207 +83,213 @@ public class BuildSettings {
     private String _toolexec;
 
     private String _outputFilenamePattern;
-    private Properties _definitions;
+    private Properties<String> _definitions = new Properties<>();
 
-    public BuildSettings(@Nonnull Project project) {
-        final String gopath = System.getenv("GOPATH");
-        if (isNotEmpty(gopath)) {
-            _gopath = new File(gopath);
+    @Inject
+    public BuildSettings(boolean initialize, @Nonnull Project project) {
+        _project = project;
+        if (initialize) {
+            final String gopath = System.getenv("GOPATH");
+            if (isNotEmpty(gopath)) {
+                _gopath = new File(gopath);
+            }
+            _outputFilenamePattern = project.getBuildDir() + File.separator + "out" + File.separator + project.getProjectDir().getName() + "-%{platform}%{extension}";
+            _excludes = new String[]{
+                ".git/**", ".svn/**", "build.gradle", "build/**", ".gradle/**", "gradle/**"
+            };
         }
-        _outputFilenamePattern = project.getBuildDir() + File.separator + "out" + File.separator + project.getProjectDir().getName() + "-%{platform}%{extension}";
     }
 
     public File getGopath() {
         return _gopath;
     }
 
-    public BuildSettings setGopath(File gopath) {
+    public void setGopath(File gopath) {
         _gopath = gopath;
-        return this;
     }
 
-    public boolean isUseTemporaryGopath() {
+    public Boolean getUseTemporaryGopath() {
         return _useTemporaryGopath;
     }
 
-    public BuildSettings setUseTemporaryGopath(boolean useTemporaryGopath) {
+    public void setUseTemporaryGopath(Boolean useTemporaryGopath) {
         _useTemporaryGopath = useTemporaryGopath;
-        return this;
     }
 
-    public boolean isForceRebuild() {
+    public String[] getIncludes() {
+        return _includes;
+    }
+
+    public void setIncludes(String[] includes) {
+        _includes = includes;
+    }
+
+    public String[] getExcludes() {
+        return _excludes;
+    }
+
+    public void setExcludes(String[] excludes) {
+        _excludes = excludes;
+    }
+
+    public Boolean getForceRebuild() {
         return _forceRebuild;
     }
 
-    public BuildSettings setForceRebuild(boolean forceRebuild) {
+    public void setForceRebuild(Boolean forceRebuild) {
         _forceRebuild = forceRebuild;
-        return this;
     }
 
     public Integer getParallelRuns() {
         return _parallelRuns;
     }
 
-    public BuildSettings setParallelRuns(Integer parallelRuns) {
+    public void setParallelRuns(Integer parallelRuns) {
         _parallelRuns = parallelRuns;
-        return this;
     }
 
-    public boolean isRaceDetection() {
+    public Boolean getRaceDetection() {
         return _raceDetection;
     }
 
-    public BuildSettings setRaceDetection(boolean raceDetection) {
+    public void setRaceDetection(Boolean raceDetection) {
         _raceDetection = raceDetection;
-        return this;
     }
 
-    public boolean isInteroperationWithMemorySanitizer() {
+    public Boolean getInteroperationWithMemorySanitizer() {
         return _interoperationWithMemorySanitizer;
     }
 
-    public BuildSettings setInteroperationWithMemorySanitizer(boolean interoperationWithMemorySanitizer) {
+    public void setInteroperationWithMemorySanitizer(Boolean interoperationWithMemorySanitizer) {
         _interoperationWithMemorySanitizer = interoperationWithMemorySanitizer;
-        return this;
     }
 
-    public boolean isPrintCompiledPackages() {
+    public Boolean getPrintCompiledPackages() {
         return _printCompiledPackages;
     }
 
-    public BuildSettings setPrintCompiledPackages(boolean printCompiledPackages) {
+    public void setPrintCompiledPackages(Boolean printCompiledPackages) {
         _printCompiledPackages = printCompiledPackages;
-        return this;
     }
 
-    public boolean isPrintWorkDirectory() {
+    public Boolean getPrintWorkDirectory() {
         return _printWorkDirectory;
     }
 
-    public BuildSettings setPrintWorkDirectory(boolean printWorkDirectory) {
+    public void setPrintWorkDirectory(Boolean printWorkDirectory) {
         _printWorkDirectory = printWorkDirectory;
-        return this;
     }
 
-    public boolean isPrintCommands() {
+    public Boolean getPrintCommands() {
         return _printCommands;
     }
 
-    public BuildSettings setPrintCommands(boolean printCommands) {
+    public void setPrintCommands(Boolean printCommands) {
         _printCommands = printCommands;
-        return this;
     }
 
     public String getAsmFlags() {
         return _asmFlags;
     }
 
-    public BuildSettings setAsmFlags(String asmFlags) {
+    public void setAsmFlags(String asmFlags) {
         _asmFlags = asmFlags;
-        return this;
     }
 
     public String getBuildmode() {
         return _buildmode;
     }
 
-    public BuildSettings setBuildmode(String buildmode) {
+    public void setBuildmode(String buildmode) {
         _buildmode = buildmode;
-        return this;
     }
 
     public String getCompiler() {
         return _compiler;
     }
 
-    public BuildSettings setCompiler(String compiler) {
+    public void setCompiler(String compiler) {
         _compiler = compiler;
-        return this;
     }
 
     public String getGccgoFlags() {
         return _gccgoFlags;
     }
 
-    public BuildSettings setGccgoFlags(String gccgoFlags) {
+    public void setGccgoFlags(String gccgoFlags) {
         _gccgoFlags = gccgoFlags;
-        return this;
     }
 
     public String getGcFlags() {
         return _gcFlags;
     }
 
-    public BuildSettings setGcFlags(String gcFlags) {
+    public void setGcFlags(String gcFlags) {
         _gcFlags = gcFlags;
-        return this;
     }
 
     public String getLdFlags() {
         return _ldFlags;
     }
 
-    public BuildSettings setLdFlags(String ldFlags) {
+    public void setLdFlags(String ldFlags) {
         _ldFlags = ldFlags;
-        return this;
     }
 
-    public boolean isLinkShared() {
+    public Boolean getLinkShared() {
         return _linkShared;
     }
 
-    public BuildSettings setLinkShared(boolean linkShared) {
+    public void setLinkShared(Boolean linkShared) {
         _linkShared = linkShared;
-        return this;
     }
 
     public File getPkgDir() {
         return _pkgDir;
     }
 
-    public BuildSettings setPkgDir(File pkgDir) {
+    public void setPkgDir(File pkgDir) {
         _pkgDir = pkgDir;
-        return this;
     }
 
     public String getTags() {
         return _tags;
     }
 
-    public BuildSettings setTags(String tags) {
+    public void setTags(String tags) {
         _tags = tags;
-        return this;
     }
 
     public String getToolexec() {
         return _toolexec;
     }
 
-    public BuildSettings setToolexec(String toolexec) {
+    public void setToolexec(String toolexec) {
         _toolexec = toolexec;
-        return this;
     }
 
     public String getOutputFilenamePattern() {
         return _outputFilenamePattern;
     }
 
-    public BuildSettings setOutputFilenamePattern(String outputFilenamePattern) {
+    public void setOutputFilenamePattern(String outputFilenamePattern) {
         _outputFilenamePattern = outputFilenamePattern;
-        return this;
     }
 
-    public Properties getDefinitions() {
+    public void definitions(Closure<?> closure) {
+        ConfigureUtil.configure(closure, getDefinitions());
+    }
+
+    public Properties<String> getDefinitions() {
         return _definitions;
     }
 
-    public BuildSettings setDefinitions(Properties definitions) {
+    public void setDefinitions(Properties<String> definitions) {
         _definitions = definitions;
-        return this;
     }
 
     @Nonnull
-    public File outputFilenameFor(@Nonnull Platform platform)  {
+    public File outputFilenameFor(@Nonnull Platform platform) {
         return new File(replacePlaceholdersFor(platform, getOutputFilenamePattern()));
     }
 
@@ -286,18 +300,18 @@ public class BuildSettings {
         if (isNotEmpty(ldFlags)) {
             sb.append(ldFlags);
         }
-        final Properties definitions = getDefinitions();
+        final Properties<String> definitions = getDefinitions();
         if (definitions != null) {
-            for (final String name : definitions.stringPropertyNames()) {
+            for (final Entry<String, String> entry : definitions.entrySet()) {
                 if (sb.length() > 0) {
                     sb.append(' ');
                 }
-                final String plainValue = definitions.getProperty(name, "");
-                final String escapedValue = plainValue
+                final Object plainValue = entry.getValue();
+                final String escapedValue = plainValue != null ? plainValue.toString()
                     .replace("\\", "\\\\")
                     .replace("\"", "\\\"")
-                    ;
-                sb.append("-X \\\"").append(name).append('=').append(escapedValue).append("\\\"");
+                    : "";
+                sb.append("-X \\\"").append(entry.getKey()).append('=').append(escapedValue).append("\\\"");
             }
         }
         return sb.toString();
@@ -340,14 +354,16 @@ public class BuildSettings {
                 } catch (final Exception e) {
                     throw new IllegalStateException("Could not get value of field " + field + ".", e);
                 }
-                if (plainValue instanceof Boolean) {
-                    if ((Boolean)plainValue) {
+                if (field.getType().equals(Boolean.class)) {
+                    if (plainValue != null && (Boolean) plainValue) {
                         result.put(argument.value(), null);
                     }
-                } else if (plainValue instanceof Integer) {
-                    result.put(argument.value(), plainValue.toString());
-                } else if (plainValue instanceof String) {
-                    if (isNotEmpty((String)plainValue)) {
+                } else if (field.getType().equals(Integer.class)) {
+                    if (plainValue != null) {
+                        result.put(argument.value(), plainValue.toString());
+                    }
+                } else if (field.getType().equals(String.class)) {
+                    if (isNotEmpty((String) plainValue)) {
                         result.put(argument.value(), plainValue.toString());
                     }
                 } else if (plainValue != null) {
@@ -357,5 +373,13 @@ public class BuildSettings {
         }
         return result;
     }
-    
+
+    @Nonnull
+    public BuildSettings merge(@Nonnull BuildSettings with) {
+        final BuildSettings result = new BuildSettings(false, _project);
+        BeanUtils.copyNonNulls(BuildSettings.class, this, result);
+        BeanUtils.copyNonNulls(BuildSettings.class, with, result);
+        return result;
+    }
+
 }

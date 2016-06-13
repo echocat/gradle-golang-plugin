@@ -1,3 +1,5 @@
+import org.echocat.gradle.plugins.golang.tasks.GolangTask
+
 apply plugin: 'org.echocat.golang'
 
 buildscript {
@@ -29,6 +31,23 @@ golang {
     packageName = 'github.com/echocat/gradle-golang-plugin/samples/simple-project'
 
     build {
-        useTemporaryGopath = true
+        useTemporaryGopath = true;
+        definitions {
+            'main.artifactId' this.name;
+            'main.groupId' this.group;
+            'main.version' this.version;
+        }
     }
+}
+
+task moo(type: MooTask)
+build.dependsOn moo
+
+class MooTask extends GolangTask {
+
+    @Override
+    void run() throws Exception {
+        println(toolchain().goBinary())
+    }
+
 }

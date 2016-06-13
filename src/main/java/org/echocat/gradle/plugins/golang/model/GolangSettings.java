@@ -4,11 +4,13 @@ import org.gradle.api.Project;
 import org.gradle.api.plugins.ExtensionAware;
 
 import javax.annotation.Nonnull;
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
 import static org.echocat.gradle.plugins.golang.model.Platform.toPlatforms;
+import static org.echocat.gradle.plugins.golang.utils.BeanUtils.copyNonNulls;
 
 public class GolangSettings {
 
@@ -20,49 +22,45 @@ public class GolangSettings {
     private Platform _hostPlatform;
     private File _cacheRoot;
 
-    public GolangSettings(@Nonnull Project project) {
+    @Inject
+    public GolangSettings(boolean initialize, @Nonnull Project project) {
         _project = project;
-
-        _platforms = "linux-386,linux-amd64,windows-386,windows-amd64,darwin-amd64";
-        _cacheRoot = new File(System.getProperty("user.home", "."), ".go");
+        if (initialize) {
+            _platforms = "linux-386,linux-amd64,windows-386,windows-amd64,darwin-amd64";
+            _cacheRoot = new File(System.getProperty("user.home", "."), ".go");
+        }
     }
 
     public String getPlatforms() {
         return _platforms;
     }
 
-    @Nonnull
-    public GolangSettings setPlatforms(String platforms) {
+    public void setPlatforms(String platforms) {
         _platforms = platforms;
-        return this;
-    }
-
-    public Platform getHostPlatform() {
-        return _hostPlatform;
-    }
-
-    public GolangSettings setHostPlatform(Platform hostPlatform) {
-        _hostPlatform = hostPlatform;
-        return this;
     }
 
     public String getPackageName() {
         return _packageName;
     }
 
-    @Nonnull
-    public GolangSettings setPackageName(String packageName) {
+    public void setPackageName(String packageName) {
         _packageName = packageName;
-        return this;
+    }
+
+    public Platform getHostPlatform() {
+        return _hostPlatform;
+    }
+
+    public void setHostPlatform(Platform hostPlatform) {
+        _hostPlatform = hostPlatform;
     }
 
     public File getCacheRoot() {
         return _cacheRoot;
     }
 
-    public GolangSettings setCacheRoot(File cacheRoot) {
+    public void setCacheRoot(File cacheRoot) {
         _cacheRoot = cacheRoot;
-        return this;
     }
 
     @Nonnull
@@ -75,8 +73,7 @@ public class GolangSettings {
     }
 
     @Nonnull
-    public File packagePath() {
-        final File gopath = build().getGopath();
+    public File packagePathFor(@Nonnull File gopath) {
         try {
             return new File(gopath, "src/" + getPackageName()).getCanonicalFile();
         } catch (final IOException e) {
@@ -94,18 +91,11 @@ public class GolangSettings {
     }
 
     @Nonnull
-    public BuildSettings build() {
-        return ((ExtensionAware) this).getExtensions().getByType(BuildSettings.class);
-    }
-
-    @Nonnull
-    public ToolchainSettings toolchain() {
-        return ((ExtensionAware) this).getExtensions().getByType(ToolchainSettings.class);
-    }
-
-    @Nonnull
-    public DependenciesSettings dependencies() {
-        return ((ExtensionAware) this).getExtensions().getByType(DependenciesSettings.class);
+    public GolangSettings merge(@Nonnull GolangSettings with) {
+        final GolangSettings result = new GolangSettings(false, _project);
+        copyNonNulls(GolangSettings.class, this, result);
+        copyNonNulls(GolangSettings.class, with, result);
+        return result;
     }
 
 }

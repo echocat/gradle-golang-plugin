@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.Map.Entry;
 
 import static java.io.File.separatorChar;
+import static java.lang.Boolean.TRUE;
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.Files.walkFileTree;
 import static org.echocat.gradle.plugins.golang.tasks.Get.DependencyDirType.*;
@@ -39,8 +40,8 @@ public class Get extends GolangTask {
 
     @Override
     public void run() throws Exception {
-        final GolangSettings settings = settings();
-        final DependenciesSettings dependencies = settings.dependencies();
+        final GolangSettings settings = golang();
+        final DependenciesSettings dependencies = dependencies();
 
         final File dependencyCacheDirectory = dependencies.getDependencyCache();
         final Set<String> knownDependencyIds = new HashSet<>();
@@ -54,7 +55,7 @@ public class Get extends GolangTask {
                 throw new RuntimeException("Could not download dependency: " + reference);
             }
             LOGGER.debug("Update dependency {} (if required)...", reference);
-            if (dependencies.isForceUpdate()) {
+            if (TRUE.equals(dependencies.getForceUpdate())) {
                 repository.forceUpdate(dependencyCacheDirectory);
                 LOGGER.info("Dependency {} updated.", reference);
             } else {
@@ -89,10 +90,8 @@ public class Get extends GolangTask {
     }
 
     protected boolean doDeleteUnknownDependenciesIfRequired(@Nonnull Path root, @Nonnull Set<String> knownDependencyIds) throws IOException {
-        if (settings().dependencies().isDeleteUnknownDependencies()) {
-            return doDeleteUnknownDependencies(root, knownDependencyIds);
-        }
-        return false;
+        return TRUE.equals(dependencies().getDeleteUnknownDependencies())
+            && doDeleteUnknownDependencies(root, knownDependencyIds);
     }
 
     protected boolean doDeleteUnknownDependencies(@Nonnull Path root, @Nonnull Set<String> knownDependencyIds) throws IOException {

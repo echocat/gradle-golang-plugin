@@ -2,10 +2,7 @@ package org.echocat.gradle.plugins.golang;
 
 import groovy.lang.Closure;
 import groovy.lang.GroovyObject;
-import org.echocat.gradle.plugins.golang.model.BuildSettings;
-import org.echocat.gradle.plugins.golang.model.DependenciesSettings;
-import org.echocat.gradle.plugins.golang.model.GolangSettings;
-import org.echocat.gradle.plugins.golang.model.ToolchainSettings;
+import org.echocat.gradle.plugins.golang.model.*;
 import org.echocat.gradle.plugins.golang.tasks.*;
 import org.echocat.gradle.plugins.golang.utils.DependencyHandlerExtension;
 import org.gradle.api.Plugin;
@@ -36,24 +33,25 @@ public class GolangPlugin implements Plugin<Project> {
     }
 
     @Override
-    public void apply(Project target) {
+    public void apply(Project project) {
         final DependencyHandlerExtension dependencyHandlerExtension = new DependencyHandlerExtension(_configurationContainer);
         final GroovyObject ext = (GroovyObject) _dependencyHandler.getProperty("ext");
         for (final Entry<String, Closure<Dependency>> entry : dependencyHandlerExtension.getDependencyMethodsAsClosures().entrySet()) {
             ext.setProperty(entry.getKey(), entry.getValue());
         }
 
-        final ConfigurationContainer configurations = target.getConfigurations();
+        final ConfigurationContainer configurations = project.getConfigurations();
         configurations.maybeCreate("test");
         configurations.maybeCreate("build");
 
-        final ExtensionContainer extensions = target.getExtensions();
-        final ExtensionAware golang = (ExtensionAware) extensions.create("golang", GolangSettings.class, target);
-        golang.getExtensions().create("build", BuildSettings.class, target);
-        golang.getExtensions().create("toolchain", ToolchainSettings.class);
-        golang.getExtensions().create("dependencies", DependenciesSettings.class, target);
+        final ExtensionContainer extensions = project.getExtensions();
+        final ExtensionAware golang = (ExtensionAware) extensions.create("golang", GolangSettings.class, true, project);
+        golang.getExtensions().create("build", BuildSettings.class, true, project);
+        golang.getExtensions().create("toolchain", ToolchainSettings.class, true, project);
+        golang.getExtensions().create("dependencies", DependenciesSettings.class, true, project);
+        golang.getExtensions().create("testing", TestingSettings.class, true, project);
 
-        final TaskContainer tasks = target.getTasks();
+        final TaskContainer tasks = project.getTasks();
         tasks.create("validate", Validate.class);
         tasks.create("prepare-toolchain", PrepareToolchain.class);
         tasks.create("prepare-sources", PrepareSources.class);

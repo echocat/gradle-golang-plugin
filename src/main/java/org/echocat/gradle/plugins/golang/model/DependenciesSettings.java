@@ -1,49 +1,60 @@
 package org.echocat.gradle.plugins.golang.model;
 
 import org.gradle.api.Project;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import javax.inject.Inject;
 import java.io.File;
+
+import static org.echocat.gradle.plugins.golang.utils.BeanUtils.copyNonNulls;
 
 public class DependenciesSettings {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DependenciesSettings.class);
+    @Nonnull
+    private final Project _project;
 
-    private boolean _forceUpdate;
-    private boolean _deleteUnknownDependencies;
+    private Boolean _forceUpdate;
+    private Boolean _deleteUnknownDependencies;
     private File _dependencyCache;
 
-    public DependenciesSettings(@Nonnull Project project) {
-        _dependencyCache = new File(project.getProjectDir(), "vendor");
+    @Inject
+    public DependenciesSettings(boolean initialize, @Nonnull Project project) {
+        _project = project;
+        if (initialize) {
+            _dependencyCache = new File(project.getProjectDir(), "vendor");
+        }
     }
 
-    public boolean isForceUpdate() {
+    public Boolean getForceUpdate() {
         return _forceUpdate;
     }
 
-    public DependenciesSettings setForceUpdate(boolean forceUpdate) {
+    public void setForceUpdate(Boolean forceUpdate) {
         _forceUpdate = forceUpdate;
-        return this;
     }
 
-    public boolean isDeleteUnknownDependencies() {
+    public Boolean getDeleteUnknownDependencies() {
         return _deleteUnknownDependencies;
     }
 
-    public DependenciesSettings setDeleteUnknownDependencies(boolean deleteUnknownDependencies) {
+    public void setDeleteUnknownDependencies(Boolean deleteUnknownDependencies) {
         _deleteUnknownDependencies = deleteUnknownDependencies;
-        return this;
     }
 
     public File getDependencyCache() {
         return _dependencyCache;
     }
 
-    public DependenciesSettings setDependencyCache(File dependencyCache) {
+    public void setDependencyCache(File dependencyCache) {
         _dependencyCache = dependencyCache;
-        return this;
+    }
+
+    @Nonnull
+    public DependenciesSettings merge(@Nonnull DependenciesSettings with) {
+        final DependenciesSettings result = new DependenciesSettings(false, _project);
+        copyNonNulls(DependenciesSettings.class, this, result);
+        copyNonNulls(DependenciesSettings.class, with, result);
+        return result;
     }
 
 }

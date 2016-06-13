@@ -15,6 +15,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Map;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 public class Build extends GolangTask {
@@ -40,17 +41,17 @@ public class Build extends GolangTask {
 
     @Override
     public void run() throws Exception {
-        for (final Platform platform : settings().getParsedPlatforms()) {
+        for (final Platform platform : golang().getParsedPlatforms()) {
             executeFor(platform);
         }
     }
 
     protected void executeFor(@Nonnull Platform platform) throws Exception {
-        final GolangSettings settings = settings();
-        final ToolchainSettings toolchain = settings.toolchain();
-        final BuildSettings build = settings.build();
+        final GolangSettings settings = golang();
+        final ToolchainSettings toolchain = toolchain();
+        final BuildSettings build = build();
 
-        final Path expectedPackagePath = settings.packagePath().toPath();
+        final Path expectedPackagePath = settings.packagePathFor(build.getGopath()).toPath();
         final Path projectBasedir = settings.projectBasedir().toPath();
         if (!expectedPackagePath.startsWith(projectBasedir)) {
             throw new IllegalStateException("Project '" + settings.getPackageName() + "' is not part of GOPATH (" + build.getGopath() + "). Current location: " + projectBasedir);
@@ -66,7 +67,7 @@ public class Build extends GolangTask {
             .env("GOROOT", toolchain.getGoroot())
             .env("GOOS", platform.getOperatingSystem().getNameInGo())
             .env("GOARCH", platform.getArchitecture().getNameInGo())
-            .env("CGO_ENABLED", toolchain.isCgoEnabled() ? "1" : "0");
+            .env("CGO_ENABLED", TRUE.equals(toolchain.getCgoEnabled()) ? "1" : "0");
 
         executor.arguments("build");
         executor.arguments("-o", outputFilename.toString());

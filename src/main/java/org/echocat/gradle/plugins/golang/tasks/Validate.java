@@ -10,9 +10,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.List;
 
-import static org.apache.commons.lang3.StringUtils.isEmpty;
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-import static org.apache.commons.lang3.StringUtils.join;
+import static java.lang.Boolean.TRUE;
+import static org.apache.commons.lang3.StringUtils.*;
 import static org.echocat.gradle.plugins.golang.model.Platform.currentPlatform;
 
 public class Validate extends GolangTask {
@@ -21,24 +20,24 @@ public class Validate extends GolangTask {
 
     @Override
     public void run() {
-        final GolangSettings settings = settings();
-        final ToolchainSettings toolchain = toolchain();
-        final BuildSettings build = build();
+        final GolangSettings golang = globalGolang();
+        final ToolchainSettings toolchain = globalToolchain();
+        final BuildSettings build = globalBuild();
 
-        if (isEmpty(settings.getPackageName())) {
+        if (isEmpty(golang.getPackageName())) {
             throw new IllegalArgumentException("There is no package name configured. (property: 'golang.packageName')");
         }
 
-        final List<Platform> platforms = settings.getParsedPlatforms();
+        final List<Platform> platforms = golang.getParsedPlatforms();
 
         final Platform hostPlatform = currentPlatform();
-        settings.setHostPlatform(hostPlatform);
+        golang.setHostPlatform(hostPlatform);
 
         configureGorootIfNeeded();
         configureBootstrapGorootIfNeeded();
         configureGopathIfNeeded();
 
-        LOGGER.info("Package:    {}", settings.getPackageName());
+        LOGGER.info("Package:    {}", golang.getPackageName());
         LOGGER.info("Platforms:  {}", join(platforms, ", "));
         LOGGER.info("Host:       {}", hostPlatform);
         LOGGER.info("Go version: {}", toolchain.getGoversion());
@@ -47,15 +46,17 @@ public class Validate extends GolangTask {
     }
 
     protected void configureGorootIfNeeded() {
-        final ToolchainSettings toolchain = toolchain();
+        final GolangSettings golang = globalGolang();
+        final ToolchainSettings toolchain = globalToolchain();
         final File goroot = toolchain.getGoroot();
         if (goroot == null) {
-            toolchain.setGoroot(new File(settings().getCacheRoot(), "sdk" + File.separator + toolchain.getGoversion()));
+            toolchain.setGoroot(new File(golang.getCacheRoot(), "sdk" + File.separator + toolchain.getGoversion()));
         }
     }
 
     protected void configureBootstrapGorootIfNeeded() {
-        final ToolchainSettings toolchain = toolchain();
+        final GolangSettings golang = globalGolang();
+        final ToolchainSettings toolchain = globalToolchain();
         final File bootstrapGoroot = toolchain.getBootstrapGoroot();
         if (bootstrapGoroot == null) {
             final String gorootEnv = System.getenv("GOROOT");
@@ -66,13 +67,13 @@ public class Validate extends GolangTask {
                     return;
                 }
             }
-            toolchain.setBootstrapGoroot(new File(settings().getCacheRoot(), "sdk" + File.separator + "bootstrap"));
+            toolchain.setBootstrapGoroot(new File(golang.getCacheRoot(), "sdk" + File.separator + "bootstrap"));
         }
     }
 
     protected void configureGopathIfNeeded() {
-        final BuildSettings build = build();
-        if (build.isUseTemporaryGopath()) {
+        final BuildSettings build = globalBuild();
+        if (TRUE.equals(build.getUseTemporaryGopath())) {
             build.setGopath(new File(getProject().getBuildDir(), "gopath"));
         }
     }

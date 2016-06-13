@@ -13,6 +13,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 
+import static java.lang.Boolean.TRUE;
 import static java.net.URI.create;
 import static org.apache.commons.io.FileUtils.writeStringToFile;
 
@@ -50,7 +51,7 @@ public class PrepareToolchain extends GolangTask {
     }
 
     protected boolean buildTargetsIfRequired() throws Exception {
-        final GolangSettings settings = settings();
+        final GolangSettings settings = golang();
         final ToolchainSettings toolchain = toolchain();
         final List<Platform> platforms = settings.getParsedPlatforms();
         if (platforms.isEmpty()) {
@@ -58,7 +59,7 @@ public class PrepareToolchain extends GolangTask {
         }
         boolean atLeastOneBuild = false;
         for (final Platform platform : platforms) {
-            if (build(platform, toolchain.isForceBuildToolchain())) {
+            if (build(platform, TRUE.equals(toolchain.getForceBuildToolchain()))) {
                 atLeastOneBuild = true;
             }
         }
@@ -85,7 +86,7 @@ public class PrepareToolchain extends GolangTask {
                 .env("GOROOT_BOOTSTRAP", toolchain.getBootstrapGoroot())
                 .env("GOOS", goos)
                 .env("GOARCH", goarch)
-                .env("CGO_ENABLED", toolchain.isCgoEnabled() ? "1" : "0")
+                .env("CGO_ENABLED", TRUE.equals(toolchain.getCgoEnabled()) ? "1" : "0")
                 .failKeywords("ERROR: ", "($GOPATH not set)", "Access denied")
                 .execute();
 
