@@ -9,6 +9,7 @@ description 'Do great stuff for you.'
 version '1.0.0-SNAPSHOT'
 
 sourceCompatibility = 1.7
+targetCompatibility = 1.7
 
 repositories {
     mavenCentral()
@@ -47,4 +48,9 @@ pluginBundle {
             displayName = 'Gr'
         }
     }
+}
+
+tasks.withType(JavaCompile) {
+    options.warnings = false
+    options.encoding = "UTF-8"
 }
