@@ -1,9 +1,7 @@
 package org.echocat.gradle.plugins.golang.model;
 
-import groovy.lang.Closure;
 import org.echocat.gradle.plugins.golang.utils.BeanUtils;
 import org.gradle.api.Project;
-import org.gradle.util.ConfigureUtil;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -83,7 +81,7 @@ public class BuildSettings {
     private String _toolexec;
 
     private String _outputFilenamePattern;
-    private Properties<String> _definitions = new Properties<>();
+    private Map<String, String> _definitions;
 
     @Inject
     public BuildSettings(boolean initialize, @Nonnull Project project) {
@@ -276,15 +274,11 @@ public class BuildSettings {
         _outputFilenamePattern = outputFilenamePattern;
     }
 
-    public void definitions(Closure<?> closure) {
-        ConfigureUtil.configure(closure, getDefinitions());
-    }
-
-    public Properties<String> getDefinitions() {
+    public Map<String, String> getDefinitions() {
         return _definitions;
     }
 
-    public void setDefinitions(Properties<String> definitions) {
+    public void setDefinitions(Map<String, String> definitions) {
         _definitions = definitions;
     }
 
@@ -300,7 +294,7 @@ public class BuildSettings {
         if (isNotEmpty(ldFlags)) {
             sb.append(ldFlags);
         }
-        final Properties<String> definitions = getDefinitions();
+        final Map<String, String> definitions = getDefinitions();
         if (definitions != null) {
             for (final Entry<String, String> entry : definitions.entrySet()) {
                 if (sb.length() > 0) {
@@ -311,7 +305,7 @@ public class BuildSettings {
                     .replace("\\", "\\\\")
                     .replace("\"", "\\\"")
                     : "";
-                sb.append("-X \\\"").append(entry.getKey()).append('=').append(escapedValue).append("\\\"");
+                sb.append("-X \"").append((Object) entry.getKey()).append('=').append(escapedValue).append("\"");
             }
         }
         return sb.toString();

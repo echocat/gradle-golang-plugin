@@ -20,12 +20,18 @@ public class Validate extends GolangTask {
 
     @Override
     public void run() {
-        final GolangSettings golang = globalGolang();
-        final ToolchainSettings toolchain = globalToolchain();
-        final BuildSettings build = globalBuild();
+        final GolangSettings golang = getGlobalGolang();
+        final ToolchainSettings toolchain = getGlobalToolchain();
+        final BuildSettings build = getGlobalBuild();
 
         if (isEmpty(golang.getPackageName())) {
-            throw new IllegalArgumentException("There is no package name configured. (property: 'golang.packageName')");
+            final Object group = getProject().getGroup();
+            if (group != null) {
+                golang.setPackageName(group.toString());
+            }
+            if (isEmpty(golang.getPackageName())) {
+                throw new IllegalArgumentException("There is no package name configured. (property: 'golang.packageName')");
+            }
         }
 
         final List<Platform> platforms = golang.getParsedPlatforms();
@@ -46,8 +52,8 @@ public class Validate extends GolangTask {
     }
 
     protected void configureGorootIfNeeded() {
-        final GolangSettings golang = globalGolang();
-        final ToolchainSettings toolchain = globalToolchain();
+        final GolangSettings golang = getGlobalGolang();
+        final ToolchainSettings toolchain = getGlobalToolchain();
         final File goroot = toolchain.getGoroot();
         if (goroot == null) {
             toolchain.setGoroot(new File(golang.getCacheRoot(), "sdk" + File.separator + toolchain.getGoversion()));
@@ -55,13 +61,13 @@ public class Validate extends GolangTask {
     }
 
     protected void configureBootstrapGorootIfNeeded() {
-        final GolangSettings golang = globalGolang();
-        final ToolchainSettings toolchain = globalToolchain();
+        final GolangSettings golang = getGlobalGolang();
+        final ToolchainSettings toolchain = getGlobalToolchain();
         final File bootstrapGoroot = toolchain.getBootstrapGoroot();
         if (bootstrapGoroot == null) {
             final String gorootEnv = System.getenv("GOROOT");
             if (isNotEmpty(gorootEnv)) {
-                final File goBinary = new File(gorootEnv, File.separator + "bin" + File.separator + "go" + toolchain.executableSuffix());
+                final File goBinary = new File(gorootEnv, File.separator + "bin" + File.separator + "go" + toolchain.getExecutableSuffix());
                 if (goBinary.canExecute()) {
                     toolchain.setBootstrapGoroot(new File(gorootEnv));
                     return;
@@ -72,7 +78,7 @@ public class Validate extends GolangTask {
     }
 
     protected void configureGopathIfNeeded() {
-        final BuildSettings build = globalBuild();
+        final BuildSettings build = getGlobalBuild();
         if (TRUE.equals(build.getUseTemporaryGopath())) {
             build.setGopath(new File(getProject().getBuildDir(), "gopath"));
         }

@@ -82,7 +82,7 @@ public class GolangSettings {
     }
 
     @Nonnull
-    public File projectBasedir() {
+    public File getProjectBasedir() {
         try {
             return _project.getProjectDir().getCanonicalFile();
         } catch (final IOException e) {

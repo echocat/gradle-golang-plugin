@@ -35,7 +35,7 @@ public class PrepareToolchain extends GolangTask {
     }
 
     protected boolean buildHostIfRequired() throws Exception {
-        final ToolchainSettings toolchain = toolchain();
+        final ToolchainSettings toolchain = getToolchain();
         final String expectedVersion = toolchain.getGoversion();
         String version = goBinaryVersion();
         boolean build = false;
@@ -51,8 +51,8 @@ public class PrepareToolchain extends GolangTask {
     }
 
     protected boolean buildTargetsIfRequired() throws Exception {
-        final GolangSettings settings = golang();
-        final ToolchainSettings toolchain = toolchain();
+        final GolangSettings settings = getGolang();
+        final ToolchainSettings toolchain = getToolchain();
         final List<Platform> platforms = settings.getParsedPlatforms();
         if (platforms.isEmpty()) {
             throw new IllegalArgumentException("There are no platforms specified.");
@@ -67,7 +67,7 @@ public class PrepareToolchain extends GolangTask {
     }
 
     protected boolean build(Platform platform, boolean force) throws Exception {
-        final ToolchainSettings toolchain = toolchain();
+        final ToolchainSettings toolchain = getToolchain();
         final String goos = platform.getOperatingSystem().getNameInGo();
         final String goarch = platform.getArchitecture().getNameInGo();
         final File buildMarker = new File(toolchain.getGoroot(), "pkg" + File.separator + goos + "_" + goarch + File.separator + ".builded");
@@ -98,7 +98,7 @@ public class PrepareToolchain extends GolangTask {
     }
 
     protected void downloadSourcesIfRequired() {
-        final ToolchainSettings toolchain = toolchain();
+        final ToolchainSettings toolchain = getToolchain();
         final File goroot = toolchain.getGoroot();
         final String expectedVersion = toolchain.getGoversion();
 
@@ -138,17 +138,17 @@ public class PrepareToolchain extends GolangTask {
     }
 
     protected String goBinaryVersion() {
-        final ToolchainSettings toolchain = toolchain();
+        final ToolchainSettings toolchain = getToolchain();
         return toolchain.goBinaryVersionOf(toolchain.getGoroot());
     }
 
     protected URI downloadUri() {
-        final ToolchainSettings toolchain = toolchain();
+        final ToolchainSettings toolchain = getToolchain();
         return create(toolchain.getDownloadUriRoot() + toolchain.getGoversion() + ".src.tar.gz");
     }
 
     protected void downloadBootstrapIfRequired() {
-        final ToolchainSettings toolchain = toolchain();
+        final ToolchainSettings toolchain = getToolchain();
         String version = bootstrapGoBinaryVersion();
         if (version != null) {
             LOGGER.debug("Found go bootstrap version {}.", version);
@@ -174,12 +174,12 @@ public class PrepareToolchain extends GolangTask {
     }
 
     protected String bootstrapGoBinaryVersion() {
-        final ToolchainSettings toolchain = toolchain();
+        final ToolchainSettings toolchain = getToolchain();
         return toolchain.goBinaryVersionOf(toolchain.getBootstrapGoroot());
     }
 
     protected URI downloadUriForBootstrap() {
-        final ToolchainSettings toolchain = toolchain();
+        final ToolchainSettings toolchain = getToolchain();
         final Platform platform = Platform.currentPlatform();
         final PackageFormat packageFormat = platform.getOperatingSystem().getGoPackageFormat();
         return create(toolchain.getDownloadUriRoot() + toolchain.getGoversion() + "." + platform.getNameInGo() + packageFormat.getSuffix());

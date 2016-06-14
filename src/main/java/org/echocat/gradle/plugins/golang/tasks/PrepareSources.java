@@ -22,12 +22,12 @@ public class PrepareSources extends GolangTask {
 
     @Override
     public void run()  throws  Exception {
-        final GolangSettings settings = golang();
-        final BuildSettings build = build();
+        final GolangSettings settings = getGolang();
+        final BuildSettings build = getBuild();
         boolean atLeastOneCopied = false;
         if (TRUE.equals(build.getUseTemporaryGopath())) {
             LOGGER.debug("Prepare GOPATH ({})...", build.getGopath());
-            final File projectBasedir = settings.projectBasedir();
+            final File projectBasedir = settings.getProjectBasedir();
             final File packagePath = settings.packagePathFor(build.getGopath());
 
             final DirectoryScanner scanner = new DirectoryScanner();

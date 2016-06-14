@@ -59,7 +59,7 @@ public abstract class GolangTask extends DefaultTask {
     }
 
     @Nonnull
-    protected GolangSettings golang() {
+    protected GolangSettings getGolang() {
         final GolangSettings result = _mergedGolang;
         if (result == null) {
             throw new IllegalStateException("Not called within runBare().");
@@ -68,7 +68,7 @@ public abstract class GolangTask extends DefaultTask {
     }
 
     @Nonnull
-    protected BuildSettings build() {
+    protected BuildSettings getBuild() {
         final BuildSettings result = _mergedBuild;
         if (result == null) {
             throw new IllegalStateException("Not called within runBare().");
@@ -77,7 +77,7 @@ public abstract class GolangTask extends DefaultTask {
     }
 
     @Nonnull
-    protected DependenciesSettings dependencies() {
+    protected DependenciesSettings getDependencies() {
         final DependenciesSettings result = _mergedDependencies;
         if (result == null) {
             throw new IllegalStateException("Not called within runBare().");
@@ -86,7 +86,7 @@ public abstract class GolangTask extends DefaultTask {
     }
 
     @Nonnull
-    protected ToolchainSettings toolchain() {
+    protected ToolchainSettings getToolchain() {
         final ToolchainSettings result = _mergedToolchain;
         if (result == null) {
             throw new IllegalStateException("Not called within runBare().");
@@ -95,7 +95,7 @@ public abstract class GolangTask extends DefaultTask {
     }
 
     @Nonnull
-    protected TestingSettings testing() {
+    protected TestingSettings getTesting() {
         final TestingSettings result = _mergedTesting;
         if (result == null) {
             throw new IllegalStateException("Not called within runBare().");
@@ -104,32 +104,32 @@ public abstract class GolangTask extends DefaultTask {
     }
 
     @Nonnull
-    public GolangSettings globalGolang() {
+    public GolangSettings getGlobalGolang() {
         return _globalGolang;
     }
 
     @Nonnull
-    public BuildSettings globalBuild() {
+    public BuildSettings getGlobalBuild() {
         return _globalBuild;
     }
 
     @Nonnull
-    public ToolchainSettings globalToolchain() {
+    public ToolchainSettings getGlobalToolchain() {
         return _globalToolchain;
     }
 
     @Nonnull
-    public DependenciesSettings globalDependencies() {
+    public DependenciesSettings getGlobalDependencies() {
         return _globalDependencies;
     }
 
     @Nonnull
-    public TestingSettings globalTesting() {
+    public TestingSettings getGlobalTesting() {
         return _globalTesting;
     }
 
     @TaskAction
-    public void runBare() throws Exception {
+    public final void runBare() throws Exception {
         _mergedGolang = _globalGolang.merge(_taskGolang);
         _mergedBuild = _globalBuild.merge(_taskBuild);
         _mergedToolchain = _globalToolchain.merge(_taskToolchain);

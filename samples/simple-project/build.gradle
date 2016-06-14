@@ -11,7 +11,7 @@ buildscript {
     }
 }
 
-group 'github.com/blaubaer/gradletest'
+group 'github.com/echocat/gradle-golang-plugin/samples/simple-project'
 version '1.0.0-SNAPSHOT'
 
 dependencies {
@@ -28,15 +28,14 @@ dependencies {
 }
 
 golang {
-    packageName = 'github.com/echocat/gradle-golang-plugin/samples/simple-project'
-
     build {
-        useTemporaryGopath = true;
-        definitions {
-            'main.artifactId' this.name;
-            'main.groupId' this.group;
-            'main.version' this.version;
-        }
+        useTemporaryGopath = true
+        definitions = [
+                "${group}/bar.artifactId": "${group}:${name}:${version}",
+                "main.artifactId": name,
+                "main.version": version,
+                "main.groupId": group,
+        ]
     }
 }
 
@@ -47,7 +46,7 @@ class MooTask extends GolangTask {
 
     @Override
     void run() throws Exception {
-        println(toolchain().goBinary())
+        println(toolchain.goBinary)
     }
 
 }

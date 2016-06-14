@@ -4,6 +4,6 @@ import "fmt"
 
 var artifactId string
 
-func bar() {
+func Bar() {
 	fmt.Println(artifactId)
 }

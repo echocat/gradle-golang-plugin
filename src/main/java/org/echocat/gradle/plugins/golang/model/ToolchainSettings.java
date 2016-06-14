@@ -122,16 +122,16 @@ public class ToolchainSettings {
         if (goroot == null) {
             throw new IllegalArgumentException("There was no goroot provided.");
         }
-        return new File(goroot, separator + "bin" + separator + "go" + executableSuffix());
+        return new File(goroot, separator + "bin" + separator + "go" + getExecutableSuffix());
     }
 
     @Nonnull
-    public File goBinary() {
+    public File getGoBinary() {
         return goBinaryOf(getGoroot());
     }
 
     @Nonnull
-    public String executableSuffix() {
+    public String getExecutableSuffix() {
         if (currentOperatingSystem() == WINDOWS) {
             return ".exe";
         }

@@ -41,18 +41,18 @@ public class Build extends GolangTask {
 
     @Override
     public void run() throws Exception {
-        for (final Platform platform : golang().getParsedPlatforms()) {
+        for (final Platform platform : getGolang().getParsedPlatforms()) {
             executeFor(platform);
         }
     }
 
     protected void executeFor(@Nonnull Platform platform) throws Exception {
-        final GolangSettings settings = golang();
-        final ToolchainSettings toolchain = toolchain();
-        final BuildSettings build = build();
+        final GolangSettings settings = getGolang();
+        final ToolchainSettings toolchain = getToolchain();
+        final BuildSettings build = getBuild();
 
         final Path expectedPackagePath = settings.packagePathFor(build.getGopath()).toPath();
-        final Path projectBasedir = settings.projectBasedir().toPath();
+        final Path projectBasedir = settings.getProjectBasedir().toPath();
         if (!expectedPackagePath.startsWith(projectBasedir)) {
             throw new IllegalStateException("Project '" + settings.getPackageName() + "' is not part of GOPATH (" + build.getGopath() + "). Current location: " + projectBasedir);
         }
@@ -61,8 +61,8 @@ public class Build extends GolangTask {
         LOGGER.debug("Building {}...", outputFilename);
 
         final Executor executor = Executor.executor()
-            .executable(toolchain.goBinary())
-            .workingDirectory(getProject().getProjectDir())
+            .executable(toolchain.getGoBinary())
+            .workingDirectory(build.getGopath())
             .env("GOPATH", build.getGopath())
             .env("GOROOT", toolchain.getGoroot())
             .env("GOOS", platform.getOperatingSystem().getNameInGo())

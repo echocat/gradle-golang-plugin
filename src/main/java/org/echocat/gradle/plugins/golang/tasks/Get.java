@@ -40,14 +40,14 @@ public class Get extends GolangTask {
 
     @Override
     public void run() throws Exception {
-        final GolangSettings settings = golang();
-        final DependenciesSettings dependencies = dependencies();
+        final GolangSettings settings = getGolang();
+        final DependenciesSettings dependencies = getDependencies();
 
         final File dependencyCacheDirectory = dependencies.getDependencyCache();
         final Set<String> knownDependencyIds = new HashSet<>();
 
         boolean atLeastOneUpdated = false;
-        for (final GolangDependency dependency : getDependencies()) {
+        for (final GolangDependency dependency : dependencies()) {
             knownDependencyIds.add(dependency.getGroup());
             final RawVcsReference reference = dependency.toRawVcsReference();
             final VcsRepository repository = _vcsRepositoryProvider.tryProvideFor(reference);
@@ -74,7 +74,7 @@ public class Get extends GolangTask {
     }
 
     @Nonnull
-    protected Iterable<GolangDependency> getDependencies() {
+    protected Iterable<GolangDependency> dependencies() {
         final List<GolangDependency> result = new ArrayList<>();
         final ConfigurationContainer configurations = getProject().getConfigurations();
         for (final Configuration configuration : configurations) {
@@ -90,7 +90,7 @@ public class Get extends GolangTask {
     }
 
     protected boolean doDeleteUnknownDependenciesIfRequired(@Nonnull Path root, @Nonnull Set<String> knownDependencyIds) throws IOException {
-        return TRUE.equals(dependencies().getDeleteUnknownDependencies())
+        return TRUE.equals(getDependencies().getDeleteUnknownDependencies())
             && doDeleteUnknownDependencies(root, knownDependencyIds);
     }
 
