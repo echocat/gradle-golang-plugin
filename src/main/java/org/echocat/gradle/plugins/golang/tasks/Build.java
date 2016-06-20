@@ -35,6 +35,7 @@ public class Build extends GolangTask {
             "validate",
             "prepare-toolchain",
             "prepare-sources",
+            "test",
             "get"
         );
     }

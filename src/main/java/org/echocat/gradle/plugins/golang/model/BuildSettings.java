@@ -1,13 +1,14 @@
 package org.echocat.gradle.plugins.golang.model;
 
+import org.echocat.gradle.plugins.golang.tasks.Build;
+import org.echocat.gradle.plugins.golang.utils.Arguments;
+import org.echocat.gradle.plugins.golang.utils.Arguments.Argument;
 import org.echocat.gradle.plugins.golang.utils.BeanUtils;
 import org.gradle.api.Project;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.io.File;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,8 +16,6 @@ import java.util.Map.Entry;
 
 import static java.io.File.pathSeparator;
 import static java.io.File.separator;
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 public class BuildSettings {
@@ -329,43 +328,9 @@ public class BuildSettings {
         return "";
     }
 
-    @Retention(RUNTIME)
-    @Target(FIELD)
-    public @interface Argument {
-        public String value();
-    }
-
     @Nonnull
     public Map<String, String> additionalArgumentMap() {
-        final Map<String, String> result = new HashMap<>();
-        for (final Field field : BuildSettings.class.getDeclaredFields()) {
-            final BuildSettings.Argument argument = field.getAnnotation(BuildSettings.Argument.class);
-            if (argument != null) {
-                final Object plainValue;
-                try {
-                    field.setAccessible(true);
-                    plainValue = field.get(this);
-                } catch (final Exception e) {
-                    throw new IllegalStateException("Could not get value of field " + field + ".", e);
-                }
-                if (field.getType().equals(Boolean.class)) {
-                    if (plainValue != null && (Boolean) plainValue) {
-                        result.put(argument.value(), null);
-                    }
-                } else if (field.getType().equals(Integer.class)) {
-                    if (plainValue != null) {
-                        result.put(argument.value(), plainValue.toString());
-                    }
-                } else if (field.getType().equals(String.class)) {
-                    if (isNotEmpty((String) plainValue)) {
-                        result.put(argument.value(), plainValue.toString());
-                    }
-                } else if (plainValue != null) {
-                    throw new IllegalArgumentException("The type of field " + field + " is currently not supported.");
-                }
-            }
-        }
-        return result;
+        return Arguments.argumentMapOf(BuildSettings.class, this);
     }
 
     @Nonnull

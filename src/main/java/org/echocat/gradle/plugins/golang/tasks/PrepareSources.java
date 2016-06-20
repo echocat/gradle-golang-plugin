@@ -34,6 +34,7 @@ public class PrepareSources extends GolangTask {
             scanner.setBasedir(projectBasedir);
             scanner.setIncludes(build.getIncludes());
             scanner.setExcludes(build.getExcludes());
+            scanner.setCaseSensitive(true);
             scanner.scan();
             for (final String file : scanner.getIncludedFiles()) {
                 final File sourceFile = new File(projectBasedir, file);

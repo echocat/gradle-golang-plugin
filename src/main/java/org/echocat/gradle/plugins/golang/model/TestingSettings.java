@@ -1,18 +1,23 @@
 package org.echocat.gradle.plugins.golang.model;
 
-import org.echocat.gradle.plugins.golang.model.BuildSettings.Argument;
+import org.echocat.gradle.plugins.golang.utils.Arguments;
+import org.echocat.gradle.plugins.golang.utils.Arguments.Argument;
 import org.echocat.gradle.plugins.golang.utils.BeanUtils;
 import org.gradle.api.Project;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.io.File;
+import java.util.Map;
 
 public class TestingSettings {
 
     @Nonnull
     private final Project _project;
 
+    private boolean _skip;
+
+    private String[] _packages;
     private String[] _includes;
     private String[] _excludes;
     private String[] _arguments;
@@ -39,7 +44,7 @@ public class TestingSettings {
      * Writes test binary as -c would.
      */
     @Argument("-blockprofile")
-    private File _blockProfile;
+    private String _blockProfile;
     /**
      * Control the detail provided in goroutine blocking profiles by
      * calling runtime.SetBlockProfileRate with n.
@@ -88,8 +93,12 @@ public class TestingSettings {
      * Write a coverage profile to the file after all tests have passed.
      * Sets -cover.
      */
-    @Argument("-coverprofile")
-    private File _coverProfile;
+    private String _coverProfile;
+    /**
+     * Write a coverage profile as HTML to the file after all tests have passed.
+     * Sets -cover.
+     */
+    private String _coverProfileHtml;
     /**
      * Specify a list of GOMAXPROCS values for which the tests or
      * benchmarks should be executed.  The default is the current value
@@ -102,13 +111,13 @@ public class TestingSettings {
      * Writes test binary as -c would.
      */
     @Argument("-cpuprofile")
-    private File _cpuProfile;
+    private String _cpuProfile;
     /**
      * Write a memory profile to the file after all tests have passed.
      * Writes test binary as -c would.
      */
     @Argument("-memprofile")
-    private File _memProfile;
+    private String _memProfile;
     /**
      * Enable more precise (and expensive) memory profiles by setting
      * runtime.MemProfileRate.  See 'go doc runtime.MemProfileRate'.
@@ -153,7 +162,7 @@ public class TestingSettings {
      * Writes test binary as -c would.
      */
     @Argument("-trace")
-    private File _trace;
+    private String _trace;
     /**
      * Verbose output: log all tests as they are run. Also print all
      * text from Log and Logf calls even if the test succeeds.
@@ -165,217 +174,236 @@ public class TestingSettings {
     public TestingSettings(boolean initialize, @Nonnull Project project) {
         _project = project;
         if (initialize) {
+            _includes = new String[] {
+                "**/*_test.go"
+            };
             _excludes = new String[]{
-                ".git/**", ".svn/**", "build.gradle", "build/**", ".gradle/**", "gradle/**", "vendor"
+                ".git/**", ".svn/**", "build.gradle", "build/**", ".gradle/**", "gradle/**", "vendor/**"
             };
         }
+    }
+
+    public boolean isSkip() {
+        return _skip;
+    }
+
+    public void setSkip(boolean skip) {
+        _skip = skip;
+    }
+
+    public String[] getPackages() {
+        return _packages;
+    }
+
+    public void setPackages(String[] packages) {
+        _packages = packages;
     }
 
     public String[] getIncludes() {
         return _includes;
     }
 
-    public TestingSettings setIncludes(String[] includes) {
+    public void setIncludes(String[] includes) {
         _includes = includes;
-        return this;
     }
 
     public String[] getExcludes() {
         return _excludes;
     }
 
-    public TestingSettings setExcludes(String[] excludes) {
+    public void setExcludes(String[] excludes) {
         _excludes = excludes;
-        return this;
     }
 
     public String[] getArguments() {
         return _arguments;
     }
 
-    public TestingSettings setArguments(String[] arguments) {
+    public void setArguments(String[] arguments) {
         _arguments = arguments;
-        return this;
     }
 
     public String getBench() {
         return _bench;
     }
 
-    public TestingSettings setBench(String bench) {
+    public void setBench(String bench) {
         _bench = bench;
-        return this;
     }
 
     public Boolean getBenchMem() {
         return _benchMem;
     }
 
-    public TestingSettings setBenchMem(Boolean benchMem) {
+    public void setBenchMem(Boolean benchMem) {
         _benchMem = benchMem;
-        return this;
     }
 
     public String getBenchTime() {
         return _benchTime;
     }
 
-    public TestingSettings setBenchTime(String benchTime) {
+    public void setBenchTime(String benchTime) {
         _benchTime = benchTime;
-        return this;
     }
 
-    public File getBlockProfile() {
+    public String getBlockProfile() {
         return _blockProfile;
     }
 
-    public TestingSettings setBlockProfile(File blockProfile) {
+    public void setBlockProfile(String blockProfile) {
         _blockProfile = blockProfile;
-        return this;
     }
 
     public Integer getBlockProfileRate() {
         return _blockProfileRate;
     }
 
-    public TestingSettings setBlockProfileRate(Integer blockProfileRate) {
+    public void setBlockProfileRate(Integer blockProfileRate) {
         _blockProfileRate = blockProfileRate;
-        return this;
     }
 
     public Integer getCount() {
         return _count;
     }
 
-    public TestingSettings setCount(Integer count) {
+    public void setCount(Integer count) {
         _count = count;
-        return this;
     }
 
     public Boolean getCover() {
         return _cover;
     }
 
-    public TestingSettings setCover(Boolean cover) {
+    public void setCover(Boolean cover) {
         _cover = cover;
-        return this;
     }
 
     public String getCoverPackages() {
         return _coverPackages;
     }
 
-    public TestingSettings setCoverPackages(String coverPackages) {
+    public void setCoverPackages(String coverPackages) {
         _coverPackages = coverPackages;
-        return this;
     }
 
     public String getCoverMode() {
         return _coverMode;
     }
 
-    public TestingSettings setCoverMode(String coverMode) {
+    public void setCoverMode(String coverMode) {
         _coverMode = coverMode;
-        return this;
     }
 
-    public File getCoverProfile() {
+    public String getCoverProfile() {
         return _coverProfile;
     }
 
-    public TestingSettings setCoverProfile(File coverProfile) {
+    public void setCoverProfile(String coverProfile) {
         _coverProfile = coverProfile;
-        return this;
+    }
+
+    public File getCoverProfileFile() {
+        final String plain = _coverProfile;
+        return plain != null ? new File(plain) : null;
+    }
+
+    public String getCoverProfileHtml() {
+        return _coverProfileHtml;
+    }
+
+    public void setCoverProfileHtml(String coverProfileHtml) {
+        _coverProfileHtml = coverProfileHtml;
+    }
+
+    public File getCoverProfileHtmlFile() {
+        final String plain = _coverProfileHtml;
+        return plain != null ? new File(plain) : null;
     }
 
     public String getCpu() {
         return _cpu;
     }
 
-    public TestingSettings setCpu(String cpu) {
+    public void setCpu(String cpu) {
         _cpu = cpu;
-        return this;
     }
 
-    public File getCpuProfile() {
+    public String getCpuProfile() {
         return _cpuProfile;
     }
 
-    public TestingSettings setCpuProfile(File cpuProfile) {
+    public void setCpuProfile(String cpuProfile) {
         _cpuProfile = cpuProfile;
-        return this;
     }
 
-    public File getMemProfile() {
+    public String getMemProfile() {
         return _memProfile;
     }
 
-    public TestingSettings setMemProfile(File memProfile) {
+    public void setMemProfile(String memProfile) {
         _memProfile = memProfile;
-        return this;
     }
 
     public Integer getMemProfileRate() {
         return _memProfileRate;
     }
 
-    public TestingSettings setMemProfileRate(Integer memProfileRate) {
+    public void setMemProfileRate(Integer memProfileRate) {
         _memProfileRate = memProfileRate;
-        return this;
     }
 
     public Integer getParallel() {
         return _parallel;
     }
 
-    public TestingSettings setParallel(Integer parallel) {
+    public void setParallel(Integer parallel) {
         _parallel = parallel;
-        return this;
     }
 
     public String getTests() {
         return _tests;
     }
 
-    public TestingSettings setTests(String tests) {
+    public void setTests(String tests) {
         _tests = tests;
-        return this;
     }
 
     public Boolean getShort() {
         return _short;
     }
 
-    public TestingSettings setShort(Boolean aShort) {
+    public void setShort(Boolean aShort) {
         _short = aShort;
-        return this;
     }
 
     public String getTimeout() {
         return _timeout;
     }
 
-    public TestingSettings setTimeout(String timeout) {
+    public void setTimeout(String timeout) {
         _timeout = timeout;
-        return this;
     }
 
-    public File getTrace() {
+    public String getTrace() {
         return _trace;
     }
 
-    public TestingSettings setTrace(File trace) {
+    public void setTrace(String trace) {
         _trace = trace;
-        return this;
     }
 
     public boolean isVerbose() {
         return _verbose;
     }
 
-    public TestingSettings setVerbose(boolean verbose) {
+    public void setVerbose(boolean verbose) {
         _verbose = verbose;
-        return this;
+    }
+
+    @Nonnull
+    public Map<String, String> additionalArgumentMap() {
+        return Arguments.argumentMapOf(TestingSettings.class, this);
     }
 
     @Nonnull

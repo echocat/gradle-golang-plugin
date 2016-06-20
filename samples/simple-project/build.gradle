@@ -1,5 +1,3 @@
-import org.echocat.gradle.plugins.golang.tasks.GolangTask
-
 apply plugin: 'org.echocat.golang'
 
 buildscript {
@@ -37,16 +35,8 @@ golang {
                 "main.groupId": group,
         ]
     }
-}
-
-task moo(type: MooTask)
-build.dependsOn moo
-
-class MooTask extends GolangTask {
-
-    @Override
-    void run() throws Exception {
-        println(toolchain.goBinary)
+    testing {
+        coverProfile = "${buildDir}/testing/${name}.cover"
+        coverProfileHtml = "${buildDir}/testing/${name}.cover.html"
     }
-
 }

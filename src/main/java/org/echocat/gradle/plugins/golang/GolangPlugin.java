@@ -52,12 +52,13 @@ public class GolangPlugin implements Plugin<Project> {
         golang.getExtensions().create("testing", TestingSettings.class, true, project);
 
         final TaskContainer tasks = project.getTasks();
+        tasks.create("clean", Clean.class);
         tasks.create("validate", Validate.class);
         tasks.create("prepare-toolchain", PrepareToolchain.class);
         tasks.create("prepare-sources", PrepareSources.class);
         tasks.create("get", Get.class);
+        tasks.create("test", Test.class);
         tasks.create("build", Build.class);
-        tasks.create("clean", Clean.class);
 
     }
 
