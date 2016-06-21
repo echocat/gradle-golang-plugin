@@ -1,9 +1,6 @@
 package org.echocat.gradle.plugins.golang.tasks;
 
-import org.echocat.gradle.plugins.golang.model.BuildSettings;
-import org.echocat.gradle.plugins.golang.model.GolangSettings;
-import org.echocat.gradle.plugins.golang.model.Platform;
-import org.echocat.gradle.plugins.golang.model.ToolchainSettings;
+import org.echocat.gradle.plugins.golang.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,11 +15,16 @@ public class Validate extends GolangTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Validate.class);
 
+    public Validate() {
+        setGroup("build");
+    }
+
     @Override
     public void run() {
-        final GolangSettings golang = getGlobalGolang();
-        final ToolchainSettings toolchain = getGlobalToolchain();
-        final BuildSettings build = getGlobalBuild();
+        final Settings settings = getGlobalSettings();
+        final GolangSettings golang = settings.getGolang();
+        final ToolchainSettings toolchain = settings.getToolchain();
+        final BuildSettings build = settings.getBuild();
 
         if (isEmpty(golang.getPackageName())) {
             final Object group = getProject().getGroup();
@@ -52,8 +54,9 @@ public class Validate extends GolangTask {
     }
 
     protected void configureGorootIfNeeded() {
-        final GolangSettings golang = getGlobalGolang();
-        final ToolchainSettings toolchain = getGlobalToolchain();
+        final Settings settings = getGlobalSettings();
+        final GolangSettings golang = settings.getGolang();
+        final ToolchainSettings toolchain = settings.getToolchain();
         final File goroot = toolchain.getGoroot();
         if (goroot == null) {
             toolchain.setGoroot(new File(golang.getCacheRoot(), "sdk" + File.separator + toolchain.getGoversion()));
@@ -61,8 +64,9 @@ public class Validate extends GolangTask {
     }
 
     protected void configureBootstrapGorootIfNeeded() {
-        final GolangSettings golang = getGlobalGolang();
-        final ToolchainSettings toolchain = getGlobalToolchain();
+        final Settings settings = getGlobalSettings();
+        final GolangSettings golang = settings.getGolang();
+        final ToolchainSettings toolchain = settings.getToolchain();
         final File bootstrapGoroot = toolchain.getBootstrapGoroot();
         if (bootstrapGoroot == null) {
             final String gorootEnv = System.getenv("GOROOT");
@@ -78,7 +82,7 @@ public class Validate extends GolangTask {
     }
 
     protected void configureGopathIfNeeded() {
-        final BuildSettings build = getGlobalBuild();
+        final BuildSettings build = getGlobalSettings().getBuild();
         if (TRUE.equals(build.getUseTemporaryGopath())) {
             build.setGopath(new File(getProject().getBuildDir(), "gopath"));
         }

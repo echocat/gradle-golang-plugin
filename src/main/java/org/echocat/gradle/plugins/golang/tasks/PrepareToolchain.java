@@ -22,6 +22,7 @@ public class PrepareToolchain extends GolangTask {
     private static final Logger LOGGER = LoggerFactory.getLogger(PrepareToolchain.class);
 
     public PrepareToolchain() {
+        setGroup("build");
         dependsOn("validate");
     }
 

@@ -31,6 +31,7 @@ public class Build extends GolangTask {
     };
 
     public Build() {
+        setGroup("build");
         dependsOn(
             "validate",
             "prepare-toolchain",

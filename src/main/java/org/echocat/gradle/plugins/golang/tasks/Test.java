@@ -40,6 +40,7 @@ public class Test extends GolangTask {
     }
 
     public Test() {
+        setGroup("build");
         dependsOn(
             "validate",
             "prepare-toolchain",

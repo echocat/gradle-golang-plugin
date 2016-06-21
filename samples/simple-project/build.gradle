@@ -1,3 +1,6 @@
+import org.echocat.gradle.plugins.golang.tasks.GolangTask
+import org.echocat.gradle.plugins.golang.utils.Executor
+
 apply plugin: 'org.echocat.golang'
 
 buildscript {
@@ -39,4 +42,17 @@ golang {
         coverProfile = "${buildDir}/testing/${name}.cover"
         coverProfileHtml = "${buildDir}/testing/${name}.cover.html"
     }
+}
+
+task moo(type: MooTask, dependsOn: test)
+build.dependsOn moo
+
+class MooTask extends GolangTask {
+
+    @Override
+    void run() throws Exception {
+        Executor.executor()
+        println(toolchain.goBinary)
+    }
+
 }

@@ -6,8 +6,6 @@ import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.io.File;
 
-import static org.echocat.gradle.plugins.golang.utils.BeanUtils.copyNonNulls;
-
 public class DependenciesSettings {
 
     @Nonnull
@@ -47,14 +45,6 @@ public class DependenciesSettings {
 
     public void setDependencyCache(File dependencyCache) {
         _dependencyCache = dependencyCache;
-    }
-
-    @Nonnull
-    public DependenciesSettings merge(@Nonnull DependenciesSettings with) {
-        final DependenciesSettings result = new DependenciesSettings(false, _project);
-        copyNonNulls(DependenciesSettings.class, this, result);
-        copyNonNulls(DependenciesSettings.class, with, result);
-        return result;
     }
 
 }

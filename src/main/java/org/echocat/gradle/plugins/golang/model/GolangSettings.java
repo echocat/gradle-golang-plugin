@@ -90,12 +90,4 @@ public class GolangSettings {
         }
     }
 
-    @Nonnull
-    public GolangSettings merge(@Nonnull GolangSettings with) {
-        final GolangSettings result = new GolangSettings(false, _project);
-        copyNonNulls(GolangSettings.class, this, result);
-        copyNonNulls(GolangSettings.class, with, result);
-        return result;
-    }
-
 }

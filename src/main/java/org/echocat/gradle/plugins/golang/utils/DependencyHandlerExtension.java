@@ -50,6 +50,16 @@ public class DependencyHandlerExtension {
     }
 
     @Nonnull
+    public Dependency tool(@Nonnull String notation) {
+        return dependency("tool", notation);
+    }
+
+    @Nonnull
+    public Dependency tool(@Nonnull Map<String, Object> arguments) {
+        return dependency("tool", arguments);
+    }
+
+    @Nonnull
     public Dependency dependency(@Nonnull String configurationName, @Nonnull String notation) {
         final Matcher matcher = NOTATION_PATTERN.matcher(notation);
         if (!matcher.matches()) {

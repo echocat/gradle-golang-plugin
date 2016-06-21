@@ -2,7 +2,6 @@ package org.echocat.gradle.plugins.golang.model;
 
 import org.echocat.gradle.plugins.golang.utils.Arguments;
 import org.echocat.gradle.plugins.golang.utils.Arguments.Argument;
-import org.echocat.gradle.plugins.golang.utils.BeanUtils;
 import org.gradle.api.Project;
 
 import javax.annotation.Nonnull;
@@ -404,14 +403,6 @@ public class TestingSettings {
     @Nonnull
     public Map<String, String> additionalArgumentMap() {
         return Arguments.argumentMapOf(TestingSettings.class, this);
-    }
-
-    @Nonnull
-    public TestingSettings merge(@Nonnull TestingSettings with) {
-        final TestingSettings result = new TestingSettings(false, _project);
-        BeanUtils.copyNonNulls(TestingSettings.class, this, result);
-        BeanUtils.copyNonNulls(TestingSettings.class, with, result);
-        return result;
     }
 
 }

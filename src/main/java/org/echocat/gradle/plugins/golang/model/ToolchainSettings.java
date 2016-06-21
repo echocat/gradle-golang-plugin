@@ -17,7 +17,6 @@ import static java.io.File.separator;
 import static java.util.regex.Pattern.compile;
 import static org.echocat.gradle.plugins.golang.model.OperatingSystem.WINDOWS;
 import static org.echocat.gradle.plugins.golang.model.OperatingSystem.currentOperatingSystem;
-import static org.echocat.gradle.plugins.golang.utils.BeanUtils.copyNonNulls;
 import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
 
 public class ToolchainSettings {
@@ -136,14 +135,6 @@ public class ToolchainSettings {
             return ".exe";
         }
         return "";
-    }
-
-    @Nonnull
-    public ToolchainSettings merge(@Nonnull ToolchainSettings with) {
-        final ToolchainSettings result = new ToolchainSettings(false, _project);
-        copyNonNulls(ToolchainSettings.class, this, result);
-        copyNonNulls(ToolchainSettings.class, with, result);
-        return result;
     }
 
 }

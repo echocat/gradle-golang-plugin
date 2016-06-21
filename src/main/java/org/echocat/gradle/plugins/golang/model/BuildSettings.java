@@ -1,16 +1,12 @@
 package org.echocat.gradle.plugins.golang.model;
 
-import org.echocat.gradle.plugins.golang.tasks.Build;
 import org.echocat.gradle.plugins.golang.utils.Arguments;
 import org.echocat.gradle.plugins.golang.utils.Arguments.Argument;
-import org.echocat.gradle.plugins.golang.utils.BeanUtils;
 import org.gradle.api.Project;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.io.File;
-import java.lang.reflect.Field;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -331,14 +327,6 @@ public class BuildSettings {
     @Nonnull
     public Map<String, String> additionalArgumentMap() {
         return Arguments.argumentMapOf(BuildSettings.class, this);
-    }
-
-    @Nonnull
-    public BuildSettings merge(@Nonnull BuildSettings with) {
-        final BuildSettings result = new BuildSettings(false, _project);
-        BeanUtils.copyNonNulls(BuildSettings.class, this, result);
-        BeanUtils.copyNonNulls(BuildSettings.class, with, result);
-        return result;
     }
 
 }

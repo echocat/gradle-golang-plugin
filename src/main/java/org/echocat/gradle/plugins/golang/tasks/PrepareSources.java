@@ -17,6 +17,7 @@ public class PrepareSources extends GolangTask {
     private static final Logger LOGGER = LoggerFactory.getLogger(PrepareSources.class);
 
     public PrepareSources() {
+        setGroup("build");
         dependsOn("validate");
     }
 

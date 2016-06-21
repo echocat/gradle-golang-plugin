@@ -43,6 +43,7 @@ public class GolangPlugin implements Plugin<Project> {
         final ConfigurationContainer configurations = project.getConfigurations();
         configurations.maybeCreate("test");
         configurations.maybeCreate("build");
+        configurations.maybeCreate("tool");
 
         final ExtensionContainer extensions = project.getExtensions();
         final ExtensionAware golang = (ExtensionAware) extensions.create("golang", GolangSettings.class, true, project);
