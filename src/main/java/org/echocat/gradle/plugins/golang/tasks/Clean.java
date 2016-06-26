@@ -11,6 +11,7 @@ public class Clean extends GolangTask {
     @Override
     public void run() throws Exception {
         forceDelete(getProject().getBuildDir());
+        getDependencyHandler().deleteUnknownDependenciesIfRequired();
     }
 
 }

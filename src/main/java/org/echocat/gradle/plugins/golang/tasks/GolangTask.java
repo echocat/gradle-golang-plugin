@@ -1,5 +1,6 @@
 package org.echocat.gradle.plugins.golang.tasks;
 
+import org.echocat.gradle.plugins.golang.DependencyHandler;
 import org.echocat.gradle.plugins.golang.model.*;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
@@ -76,6 +77,11 @@ public abstract class GolangTask extends DefaultTask {
         } finally {
             _mergedSettings = null;
         }
+    }
+
+    @Nonnull
+    protected DependencyHandler getDependencyHandler() {
+        return new DependencyHandler(getSettings());
     }
 
     public abstract void run() throws Exception;

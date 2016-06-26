@@ -57,7 +57,7 @@ public class GolangPlugin implements Plugin<Project> {
         tasks.create("validate", Validate.class);
         tasks.create("prepare-toolchain", PrepareToolchain.class);
         tasks.create("prepare-sources", PrepareSources.class);
-        tasks.create("get", Get.class);
+        tasks.create("get-tools", GetTools.class);
         tasks.create("test", Test.class);
         tasks.create("build", Build.class);
 

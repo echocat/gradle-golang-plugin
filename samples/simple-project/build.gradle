@@ -26,6 +26,7 @@ dependencies {
     build 'gopkg.in/robfig/cron.v2'
     build 'gopkg.in/jmcvetta/napping.v3'
     test 'gopkg.in/check.v1'
+    tool 'github.com/mattn/goveralls'
 }
 
 golang {

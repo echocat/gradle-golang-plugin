@@ -45,7 +45,7 @@ public class Test extends GolangTask {
             "validate",
             "prepare-toolchain",
             "prepare-sources",
-            "get"
+            "get-tools"
         );
     }
 
@@ -64,6 +64,7 @@ public class Test extends GolangTask {
             return;
         }
 
+        getDependencyHandler().get("test");
         boolean success = true;
         for (final String aPackage : packages) {
             if (!executeTestsFor(aPackage, coverProfile)) {

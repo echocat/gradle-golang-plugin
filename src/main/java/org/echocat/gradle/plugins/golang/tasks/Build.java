@@ -37,12 +37,13 @@ public class Build extends GolangTask {
             "prepare-toolchain",
             "prepare-sources",
             "test",
-            "get"
+            "get-tools"
         );
     }
 
     @Override
     public void run() throws Exception {
+        getDependencyHandler().get("build");
         for (final Platform platform : getGolang().getParsedPlatforms()) {
             executeFor(platform);
         }

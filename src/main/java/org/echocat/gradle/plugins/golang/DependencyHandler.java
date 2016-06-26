@@ -26,6 +26,8 @@ import static java.lang.Boolean.TRUE;
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.Files.walkFileTree;
 import static java.util.Collections.emptyList;
+import static org.echocat.gradle.plugins.golang.DependencyHandler.GetResult.downloaded;
+import static org.echocat.gradle.plugins.golang.DependencyHandler.GetResult.alreadyExists;
 import static org.echocat.gradle.plugins.golang.DependencyHandler.DependencyDirType.*;
 
 public class DependencyHandler {
@@ -43,10 +45,10 @@ public class DependencyHandler {
     }
 
     @Nonnull
-    public Collection<GolangDependency> get(@Nullable String configuration) throws Exception {
+    public Map<GolangDependency, GetResult> get(@Nullable String configuration) throws Exception {
         final DependenciesSettings dependencies = _settings.getDependencies();
         final File dependencyCacheDirectory = dependencies.getDependencyCache();
-        final List<GolangDependency> handledDependencies = new ArrayList<>();
+        final Map<GolangDependency, GetResult> handledDependencies = new LinkedHashMap<>();
 
         for (final GolangDependency dependency : dependencies(configuration)) {
             final RawVcsReference reference = dependency.toRawVcsReference();
@@ -56,19 +58,28 @@ public class DependencyHandler {
             }
             LOGGER.debug("Update dependency {} (if required)...", reference);
             if (TRUE.equals(dependencies.getForceUpdate())) {
-                repository.forceUpdate(dependencyCacheDirectory);
+                repository.forceUpdate(selectTargetDirectoryFor(configuration));
                 LOGGER.info("Dependency {} updated.", reference);
             } else {
-                final VcsFullReference fullReference = repository.updateIfRequired(dependencyCacheDirectory);
+                final VcsFullReference fullReference = repository.updateIfRequired(selectTargetDirectoryFor(configuration));
                 if (fullReference != null) {
                     LOGGER.info("Dependency {} updated.", reference);
-                    handledDependencies.add(dependency);
+                    handledDependencies.put(dependency, downloaded);
                 } else {
                     LOGGER.debug("No update required for dependency {}.", reference);
+                    handledDependencies.put(dependency, alreadyExists);
                 }
             }
         }
         return handledDependencies;
+    }
+
+    @Nonnull
+    protected File selectTargetDirectoryFor(@Nullable String configuration) throws Exception {
+        if ("tool".equals(configuration)) {
+            return new File(_settings.getBuild().getGopath(), "src");
+        }
+        return _settings.getDependencies().getDependencyCache();
     }
 
     @Nonnull
@@ -212,4 +223,8 @@ public class DependencyHandler {
         parentOfContainsInfoFile
     }
 
+    public enum GetResult {
+        downloaded,
+        alreadyExists
+    }
 }
