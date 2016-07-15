@@ -17,6 +17,7 @@ public class CombinedVcsRepositoryProvider implements VcsRepositoryProvider {
         this(
             new GithubVcsRepositoryProvider(),
             new GopkgInVcsRepositoryProvider(),
+            new GolangOrgVcsRepositoryProvider(),
             new BitbucketVcsRepositoryProvider(),
             new HubJazzVcsRepositoryProvider(),
             new GitApacheVcsRepositoryProvider(),

@@ -61,7 +61,7 @@ public abstract class IspBasedVcsRepositoryProviderSupport implements VcsReposit
             final Matcher matcher = nameMatcherFor(rawReference);
             final String id = idFor(matcher, rawReference);
             final String ref = refFor(matcher, rawReference);
-            return new VcsReference(vcsType, id, uri, ref, rawReference.getUpdatePolicy());
+            return new VcsReference(vcsType, id, uri, ref, rawReference.getUpdatePolicy(), subPathOf(matcher));
         }
         return resolveVcsUriFor(rawReference, vcsType);
     }
@@ -69,14 +69,19 @@ public abstract class IspBasedVcsRepositoryProviderSupport implements VcsReposit
     @Nonnull
     protected VcsReference resolveVcsUriFor(@Nonnull RawVcsReference rawReference, @Nonnull VcsType vcsType) throws VcsException {
         final Matcher matcher = nameMatcherFor(rawReference);
-        String subPath = null;
-        try {
-            subPath = matcher.group("subPath");
-        } catch (final IllegalArgumentException ignored) {}
         final String id = idFor(matcher, rawReference);
         final String ref = refFor(matcher, rawReference);
-        final URI uri = create(vcsUriPrefixFor(rawReference, vcsType) + rootFor(matcher, rawReference) + vcsUriUriSuffixFor(rawReference, vcsType) + (subPath != null ? subPath : ""));
-        return new VcsReference(vcsType, id, uri, ref, rawReference.getUpdatePolicy());
+        final URI uri = create(vcsUriPrefixFor(rawReference, vcsType) + rootFor(matcher, rawReference) + vcsUriUriSuffixFor(rawReference, vcsType));
+        return new VcsReference(vcsType, id, uri, ref, rawReference.getUpdatePolicy(), subPathOf(matcher));
+    }
+
+    @Nullable
+    protected String subPathOf(Matcher matcher) {
+        try {
+            return matcher.group("subPath");
+        } catch (final IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     @Nullable

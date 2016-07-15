@@ -11,11 +11,14 @@ import static org.echocat.gradle.plugins.golang.model.UpdatePolicy.defaultUpdate
 
 public class VcsReference extends BaseVcsReference {
 
-    public static VcsReference vcsReference(@Nonnull VcsType type, @Nonnull String name, @Nonnull String plainUri, @Nullable String ref) throws VcsValidationException {
-        return new VcsReference(type, name, plainUri, ref);
+    @Nullable
+    private final String _subPath;
+
+    public static VcsReference vcsReference(@Nonnull VcsType type, @Nonnull String name, @Nonnull String plainUri, @Nullable String ref, @Nullable String subPath) throws VcsValidationException {
+        return new VcsReference(type, name, plainUri, ref, subPath);
     }
 
-    public VcsReference(@Nonnull VcsType type, @Nonnull String id, @Nonnull String plain, @Nullable String ref) throws VcsValidationException {
+    public VcsReference(@Nonnull VcsType type, @Nonnull String id, @Nonnull String plain, @Nullable String ref, @Nullable String subPath) throws VcsValidationException {
         super(type, id, URI.create(plain), ref, defaultUpdatePolicy());
         //noinspection ConstantConditions
         if (type == null) {
@@ -24,9 +27,10 @@ public class VcsReference extends BaseVcsReference {
         if (isEmpty(plain)) {
             throw new VcsValidationException("Empty uri provided.");
         }
+        _subPath = subPath;
     }
 
-    public VcsReference(@Nonnull VcsType type, @Nonnull String id, @Nonnull URI uri, @Nullable String ref, @Nonnull UpdatePolicy updatePolicy) {
+    public VcsReference(@Nonnull VcsType type, @Nonnull String id, @Nonnull URI uri, @Nullable String ref, @Nonnull UpdatePolicy updatePolicy, @Nullable String subPath) {
         super(type, id, uri, ref, updatePolicy);
         //noinspection ConstantConditions
         if (type == null) {
@@ -36,6 +40,7 @@ public class VcsReference extends BaseVcsReference {
         if (uri == null) {
             throw new NullPointerException("uri is null");
         }
+        _subPath = subPath;
     }
 
     @Nonnull
@@ -52,4 +57,8 @@ public class VcsReference extends BaseVcsReference {
         return super.getUri();
     }
 
+    @Nullable
+    public String getSubPath() {
+        return _subPath;
+    }
 }

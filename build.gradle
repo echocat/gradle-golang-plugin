@@ -5,8 +5,8 @@ plugins {
 }
 
 group 'org.echocat.gradle.plugins'
-description 'Do great stuff for you.'
-version '1.0.0-SNAPSHOT'
+description 'Plugin do build, test and do other stuff with Golang.'
+version '0.1.0'
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
@@ -40,12 +40,13 @@ dependencies {
 pluginBundle {
     website = 'https://github.com/echocat/gradle-golang-plugin'
     vcsUrl = 'https://github.com/echocat/gradle-golang-plugin'
-    tags = ['golang', 'go', 'build']
+    tags = ['golang', 'go', 'build', 'test', 'cover']
+    description = project.description
 
     plugins {
         golangPlugin {
             id = 'org.echocat.golang'
-            displayName = 'Gr'
+            displayName = 'Golang Plugin'
         }
     }
 }

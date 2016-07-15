@@ -11,6 +11,7 @@ import java.net.URI;
 import java.util.Objects;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static org.echocat.gradle.plugins.golang.model.GolangDependency.Type.explicit;
 
 public class GolangDependency implements Dependency {
 
@@ -19,6 +20,7 @@ public class GolangDependency implements Dependency {
     private URI _repositoryUri;
     private VcsType _repositoryType;
     private UpdatePolicy _updatePolicy = UpdatePolicy.defaultUpdatePolicy();
+    private Type _type = explicit;
 
     public GolangDependency() {}
 
@@ -63,6 +65,10 @@ public class GolangDependency implements Dependency {
         return _updatePolicy;
     }
 
+    public Type getType() {
+        return _type;
+    }
+
     public GolangDependency setGroup(String group) {
         _group = group;
         return this;
@@ -85,6 +91,11 @@ public class GolangDependency implements Dependency {
 
     public GolangDependency setUpdatePolicy(UpdatePolicy updatePolicy) {
         _updatePolicy = updatePolicy;
+        return this;
+    }
+
+    public GolangDependency setType(Type type) {
+        _type = type;
         return this;
     }
 
@@ -137,5 +148,9 @@ public class GolangDependency implements Dependency {
         return new RawVcsReference(repositoryType, name, repositoryUri, ref, updatePolicy);
     }
 
+    public enum Type {
+        explicit,
+        implicit
+    }
 
 }

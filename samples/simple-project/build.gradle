@@ -13,7 +13,7 @@ buildscript {
 }
 
 group 'github.com/echocat/gradle-golang-plugin/samples/simple-project'
-version '1.0.0-SNAPSHOT'
+version '0.1.0'
 
 dependencies {
     build 'github.com/eknkc/dateformat:master'

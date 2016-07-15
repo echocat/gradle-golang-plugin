@@ -1,7 +1,10 @@
 package org.echocat.gradle.plugins.golang;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.echocat.gradle.plugins.golang.model.*;
+import org.echocat.gradle.plugins.golang.model.GolangDependency.Type;
+import org.echocat.gradle.plugins.golang.utils.Executor;
 import org.echocat.gradle.plugins.golang.vcs.*;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -20,6 +23,8 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.io.File.separatorChar;
 import static java.lang.Boolean.TRUE;
@@ -32,6 +37,7 @@ import static org.echocat.gradle.plugins.golang.DependencyHandler.DependencyDirT
 
 public class DependencyHandler {
 
+    private static final Pattern IS_EXTERNAL_DEPENDENCY_PATTERN = Pattern.compile("^([a-zA-Z0-9\\-]+\\.[a-zA-Z0-9\\-.]+/[a-zA-Z0-9\\-_.$]+[^ ]*)");
     private static final Logger LOGGER = LoggerFactory.getLogger(DependencyHandler.class);
 
     @Nonnull
@@ -47,31 +53,64 @@ public class DependencyHandler {
     @Nonnull
     public Map<GolangDependency, GetResult> get(@Nullable String configuration) throws Exception {
         final DependenciesSettings dependencies = _settings.getDependencies();
-        final File dependencyCacheDirectory = dependencies.getDependencyCache();
         final Map<GolangDependency, GetResult> handledDependencies = new LinkedHashMap<>();
+        final Queue<GolangDependency> toHandle = new LinkedList<>();
+        toHandle.addAll(dependencies(configuration));
 
-        for (final GolangDependency dependency : dependencies(configuration)) {
-            final RawVcsReference reference = dependency.toRawVcsReference();
-            final VcsRepository repository = _vcsRepositoryProvider.tryProvideFor(reference);
-            if (repository == null) {
-                throw new RuntimeException("Could not download dependency: " + reference);
-            }
-            LOGGER.debug("Update dependency {} (if required)...", reference);
-            if (TRUE.equals(dependencies.getForceUpdate())) {
-                repository.forceUpdate(selectTargetDirectoryFor(configuration));
-                LOGGER.info("Dependency {} updated.", reference);
-            } else {
-                final VcsFullReference fullReference = repository.updateIfRequired(selectTargetDirectoryFor(configuration));
-                if (fullReference != null) {
-                    LOGGER.info("Dependency {} updated.", reference);
-                    handledDependencies.put(dependency, downloaded);
-                } else {
-                    LOGGER.debug("No update required for dependency {}.", reference);
-                    handledDependencies.put(dependency, alreadyExists);
+        GolangDependency dependency;
+        while ((dependency = toHandle.poll()) != null) {
+            if (!handledDependencies.containsKey(dependency)) {
+                final RawVcsReference reference = dependency.toRawVcsReference();
+                final VcsRepository repository = _vcsRepositoryProvider.tryProvideFor(reference);
+                if (repository == null) {
+                    throw new RuntimeException("Could not download dependency: " + reference);
                 }
+                LOGGER.debug("Update dependency {} (if required)...", reference);
+                if (TRUE.equals(dependencies.getForceUpdate())) {
+                    repository.forceUpdate(selectTargetDirectoryFor(configuration));
+                    LOGGER.info("Dependency {} updated.", reference);
+                } else {
+                    final VcsFullReference fullReference = repository.updateIfRequired(selectTargetDirectoryFor(configuration));
+                    if (fullReference != null) {
+                        LOGGER.info("Dependency {} updated.", reference);
+                        handledDependencies.put(dependency, downloaded);
+                    } else {
+                        LOGGER.debug("No update required for dependency {}.", reference);
+                        handledDependencies.put(dependency, alreadyExists);
+                    }
+                }
+                toHandle.addAll(resolveDependenciesOf(dependency));
             }
         }
         return handledDependencies;
+    }
+
+    @Nonnull
+    protected Collection<GolangDependency> resolveDependenciesOf(@Nonnull GolangDependency dependency) throws Exception {
+        final Executor executor = Executor.executor()
+            .executable(_settings.getToolchain().getGoBinary())
+            .env("GOPATH", _settings.getBuild().getGopath())
+            .env("GOROOT", _settings.getToolchain().getGoroot())
+            .arguments("list", "-e", "-f", "{{.Imports}}", dependency.getGroup())
+            .execute()
+        ;
+        final String plainDependencies = executor.getStdoutAsString().trim();
+        if (!plainDependencies.startsWith("[") || !plainDependencies.endsWith("]")) {
+            throw new IllegalStateException("Got illegal response from '" + executor + "': " + plainDependencies);
+        }
+        final Collection<GolangDependency> result = new ArrayList<>();
+        final String[] plainDependencyParts = StringUtils.split(plainDependencies.substring(1, plainDependencies.length() - 1), ' ');
+        for (final String plainDependency : plainDependencyParts) {
+            final Matcher matcher = IS_EXTERNAL_DEPENDENCY_PATTERN.matcher(plainDependency);
+            if (matcher.matches()) {
+                LOGGER.warn("''{}''", matcher.group(1));
+                result.add(new GolangDependency()
+                    .setGroup(matcher.group(1))
+                    .setType(Type.implicit)
+                );
+            }
+        }
+        return result;
     }
 
     @Nonnull
@@ -94,7 +133,7 @@ public class DependencyHandler {
     }
 
     @Nonnull
-    protected Iterable<GolangDependency> dependencies(@Nullable String configurationName) {
+    protected Collection<GolangDependency> dependencies(@Nullable String configurationName) {
         final List<GolangDependency> result = new ArrayList<>();
         final Project project = _settings.getProject();
         final ConfigurationContainer configurations = project.getConfigurations();
