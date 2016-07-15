@@ -32,7 +32,7 @@ public class Validate extends GolangTask {
                 golang.setPackageName(group.toString());
             }
             if (isEmpty(golang.getPackageName())) {
-                throw new IllegalArgumentException("There is no package name configured. (property: 'golang.packageName')");
+                throw new IllegalArgumentException("There is no package name configured. (property: 'group' or 'golang.packageName')");
             }
         }
 
