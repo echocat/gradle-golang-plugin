@@ -8,7 +8,7 @@ buildscript {
         mavenLocal()
     }
     dependencies {
-        classpath "org.echocat.gradle.plugins:gradle-golang-plugin:1.0.0-SNAPSHOT"
+        classpath "org.echocat.gradle.plugins:gradle-golang-plugin:0.1.2"
     }
 }
 
@@ -39,13 +39,13 @@ golang {
                 "main.groupId": group,
         ]
     }
-    testing {
+    /*testing {
         coverProfile = "${buildDir}/testing/${name}.cover"
         coverProfileHtml = "${buildDir}/testing/${name}.cover.html"
-    }
+    }*/
 }
 
-task moo(type: MooTask, dependsOn: test)
+/*task moo(type: MooTask, dependsOn: test)
 build.dependsOn moo
 
 class MooTask extends GolangTask {
@@ -57,3 +57,4 @@ class MooTask extends GolangTask {
     }
 
 }
+*/
