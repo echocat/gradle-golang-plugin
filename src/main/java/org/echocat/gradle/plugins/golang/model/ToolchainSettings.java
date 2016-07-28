@@ -121,12 +121,25 @@ public class ToolchainSettings {
         if (goroot == null) {
             throw new IllegalArgumentException("There was no goroot provided.");
         }
-        return new File(goroot, separator + "bin" + separator + "go" + getExecutableSuffix());
+        return toolchainBinaryOf("go", goroot);
     }
 
     @Nonnull
     public File getGoBinary() {
-        return goBinaryOf(getGoroot());
+        return toolchainBinary("go");
+    }
+
+    @Nonnull
+    public File toolchainBinaryOf(String name, File goroot) {
+        if (goroot == null) {
+            throw new IllegalArgumentException("There was no goroot provided.");
+        }
+        return new File(goroot, separator + "bin" + separator + name + getExecutableSuffix());
+    }
+
+    @Nonnull
+    public File toolchainBinary(String name) {
+        return toolchainBinaryOf(name, getGoroot());
     }
 
     @Nonnull

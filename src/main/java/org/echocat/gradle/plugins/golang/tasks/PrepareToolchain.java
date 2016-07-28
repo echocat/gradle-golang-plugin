@@ -1,20 +1,24 @@
 package org.echocat.gradle.plugins.golang.tasks;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.echocat.gradle.plugins.golang.Version;
 import org.echocat.gradle.plugins.golang.model.*;
 import org.echocat.gradle.plugins.golang.utils.ArchiveUtils;
 import org.echocat.gradle.plugins.golang.utils.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 
+import static java.io.File.createTempFile;
 import static java.lang.Boolean.TRUE;
 import static java.net.URI.create;
+import static org.apache.commons.io.FileUtils.forceMkdir;
+import static org.apache.commons.io.FileUtils.readFileToString;
 import static org.apache.commons.io.FileUtils.writeStringToFile;
 
 public class PrepareToolchain extends GolangTask {
@@ -30,7 +34,7 @@ public class PrepareToolchain extends GolangTask {
     public void run() throws Exception {
         downloadBootstrapIfRequired();
         downloadSourcesIfRequired();
-        if (!buildHostIfRequired() && !buildTargetsIfRequired()) {
+        if (!buildHostIfRequired() && !buildTargetsIfRequired() && !buildToolsIfRequired()) {
             getState().upToDate();
         }
     }
@@ -65,6 +69,57 @@ public class PrepareToolchain extends GolangTask {
             }
         }
         return atLeastOneBuild;
+    }
+
+    protected boolean buildToolsIfRequired() throws Exception {
+        return buildToolIfRequired("importsExtractor");
+    }
+
+    protected boolean buildToolIfRequired(String name) throws Exception {
+        final ToolchainSettings toolchain = getToolchain();
+        final File goBinary = toolchain.getGoBinary();
+        final File binDirectory = goBinary.getParentFile();
+        final File toolBinary = new File(binDirectory, name + toolchain.getExecutableSuffix());
+        final File toolBinaryInfo = new File(binDirectory, name + ".info");
+        final String info = name + ":" + Version.GROUP + ":" + Version.VERSION;
+        if (toolBinary.exists() && toolBinaryInfo.exists()) {
+            final String foundInfo = readFileToString(toolBinaryInfo);
+            if (foundInfo.equals(info)) {
+                return false;
+            }
+        }
+
+        final File sourceTempFile = createTempFile(name, ".go");
+        try {
+            final InputStream is = getClass().getClassLoader().getResourceAsStream("org/echocat/gradle/plugins/golang/utils/" + name + ".go");
+            if (is == null) {
+                throw new FileNotFoundException("Could not find source code for tool " + name + " in classpath.");
+            }
+            try {
+                try (final OutputStream os = new FileOutputStream(sourceTempFile)) {
+                    IOUtils.copy(is, os);
+                }
+            } finally {
+                //noinspection ThrowFromFinallyBlock
+                is.close();
+            }
+
+            forceMkdir(binDirectory);
+
+            Executor.executor()
+                .executable(goBinary)
+                .arguments("build", "-o", toolBinary.getPath(), sourceTempFile.getPath())
+                .removeEnv("GOPATH")
+                .env("GOROOT", toolchain.getGoroot())
+                .env("GOROOT_BOOTSTRAP", toolchain.getBootstrapGoroot())
+                .execute();
+        } finally {
+            //noinspection ResultOfMethodCallIgnored
+            sourceTempFile.delete();
+        }
+
+        writeStringToFile(toolBinaryInfo, info);
+        return true;
     }
 
     protected boolean build(Platform platform, boolean force) throws Exception {
@@ -132,7 +187,7 @@ public class PrepareToolchain extends GolangTask {
             return null;
         }
         try {
-            return FileUtils.readFileToString(file).trim();
+            return readFileToString(file).trim();
         } catch (final IOException e) {
             throw new RuntimeException("Could not read " + file + ".", e);
         }

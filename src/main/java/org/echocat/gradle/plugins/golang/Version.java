@@ -13,11 +13,9 @@ public class Version {
     private static final Properties PROPERTIES = load();
 
     public static final String VERSION = PROPERTIES.getProperty("version", "unknown");
-    public static final String GROUP_ID = PROPERTIES.getProperty("groupId", Version.class.getPackage().getName());
-    public static final String ARTIFACT_ID = PROPERTIES.getProperty("artifactId", "unknown");
+    public static final String GROUP = PROPERTIES.getProperty("group", Version.class.getPackage().getName());
     public static final String NAME = PROPERTIES.getProperty("name", Version.class.getPackage().getName());
     public static final String DESCIPTION = PROPERTIES.getProperty("description", "");
-    public static final String URL = PROPERTIES.getProperty("url", "");
 
     private static Properties load() {
         final Properties result = new Properties();

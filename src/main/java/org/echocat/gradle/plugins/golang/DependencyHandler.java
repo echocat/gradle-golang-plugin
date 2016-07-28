@@ -88,18 +88,13 @@ public class DependencyHandler {
     @Nonnull
     protected Collection<GolangDependency> resolveDependenciesOf(@Nonnull GolangDependency dependency) throws Exception {
         final Executor executor = Executor.executor()
-            .executable(_settings.getToolchain().getGoBinary())
-            .env("GOPATH", _settings.getBuild().getGopath())
-            .env("GOROOT", _settings.getToolchain().getGoroot())
-            .arguments("list", "-e", "-f", "{{.Imports}}", dependency.getGroup())
+            .executable(_settings.getToolchain().toolchainBinary("importsExtractor"))
+            .arguments(dependency.getGroup())
             .execute()
         ;
         final String plainDependencies = executor.getStdoutAsString().trim();
-        if (!plainDependencies.startsWith("[") || !plainDependencies.endsWith("]")) {
-            throw new IllegalStateException("Got illegal response from '" + executor + "': " + plainDependencies);
-        }
         final Collection<GolangDependency> result = new ArrayList<>();
-        final String[] plainDependencyParts = StringUtils.split(plainDependencies.substring(1, plainDependencies.length() - 1), ' ');
+        final String[] plainDependencyParts = StringUtils.split(plainDependencies, '\n');
         for (final String plainDependency : plainDependencyParts) {
             final Matcher matcher = IS_EXTERNAL_DEPENDENCY_PATTERN.matcher(plainDependency);
             if (matcher.matches()) {

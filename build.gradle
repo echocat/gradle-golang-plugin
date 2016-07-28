@@ -51,6 +51,16 @@ pluginBundle {
     }
 }
 
+processResources {
+    filesMatching('**/version.properties') {
+        expand (
+            'version': "$project.version",
+            'group': "$project.group",
+            'description': "$project.description"
+        )
+    }
+}
+
 tasks.withType(JavaCompile) {
     options.warnings = false
     options.encoding = "UTF-8"
