@@ -12,6 +12,8 @@ import java.util.*;
 import java.util.Map.Entry;
 
 import static java.lang.Runtime.getRuntime;
+import static java.lang.Thread.currentThread;
+import static java.lang.Thread.sleep;
 import static org.apache.commons.io.IOUtils.closeQuietly;
 import static org.apache.commons.lang3.StringUtils.split;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -136,6 +138,11 @@ public class Executor {
         try (final ProcessOutput po = new ProcessOutput(process, _stdout, _stderr)) {
             try {
                 final int exitCode = process.waitFor();
+                try {
+                    sleep(20);
+                } catch (final InterruptedException ignored) {
+                    currentThread().interrupt();
+                }
                 final String[] lines = _stdout instanceof ByteArrayOutputStream ? split(getStdoutAsString(), '\n') : null;
                 if (exitCode != 0) {
                     toLog(lines, true);
