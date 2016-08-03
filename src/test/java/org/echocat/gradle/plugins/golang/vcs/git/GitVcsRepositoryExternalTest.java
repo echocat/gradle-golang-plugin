@@ -41,7 +41,7 @@ public class GitVcsRepositoryExternalTest {
 
     @Nonnull
     protected VcsReference referenceFor(@Nullable String ref) throws VcsValidationException {
-        return vcsReference(git, NAME, URI, ref);
+        return vcsReference(git, NAME, URI, ref, null);
     }
 
 }
