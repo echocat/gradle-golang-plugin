@@ -12,6 +12,7 @@ import java.util.*;
 import java.util.Map.Entry;
 
 import static java.lang.Runtime.getRuntime;
+import static java.lang.Thread.currentThread;
 import static org.apache.commons.io.IOUtils.closeQuietly;
 import static org.apache.commons.lang3.StringUtils.split;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -85,6 +86,11 @@ public class Executor {
     }
 
     @Nonnull
+    public Executor executable(String executable) {
+        return executable(new File(executable));
+    }
+
+    @Nonnull
     public Executor workingDirectory(File workingDirectory) {
         _workingDirectory = workingDirectory;
         return this;
@@ -135,6 +141,11 @@ public class Executor {
         final Process process = getRuntime().exec(commandLine, envp(), _workingDirectory);
         try (final ProcessOutput po = new ProcessOutput(process, _stdout, _stderr)) {
             try {
+                try {
+                    po.waitFor();
+                } catch (final InterruptedException ignored) {
+                    currentThread().interrupt();
+                }
                 final int exitCode = process.waitFor();
                 final String[] lines = _stdout instanceof ByteArrayOutputStream ? split(getStdoutAsString(), '\n') : null;
                 if (exitCode != 0) {

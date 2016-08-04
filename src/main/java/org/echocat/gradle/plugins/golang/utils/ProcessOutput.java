@@ -5,9 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import static org.apache.commons.io.IOUtils.copy;
-
 public class ProcessOutput implements Closeable {
+
+    private static final int EOF = -1;
 
     private final Thread _stdoutThread;
     private final Thread _stderrThread;
@@ -23,10 +23,21 @@ public class ProcessOutput implements Closeable {
         _stderrThread.start();
     }
 
+    public void waitFor() throws InterruptedException {
+        _stdoutThread.join();
+        _stderrThread.join();
+    }
+
     @Override
     public void close() throws IOException {
         _stdoutThread.interrupt();
         _stderrThread.interrupt();
+        try {
+            _stdoutThread.join();
+            _stderrThread.join();
+        } catch (final InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private static class Copier implements Runnable {
@@ -42,8 +53,10 @@ public class ProcessOutput implements Closeable {
         @Override
         public void run() {
             try {
-                while (!Thread.currentThread().isInterrupted()) {
-                    copy(_from, _to);
+                final byte[] buffer = new byte[4096];
+                int n;
+                while (!Thread.currentThread().isInterrupted() && EOF != (n = _from.read(buffer))) {
+                    _to.write(buffer, 0, n);
                 }
             } catch (final IOException ignored) {}
         }
