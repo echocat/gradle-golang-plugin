@@ -2,6 +2,7 @@ package org.echocat.gradle.plugins.golang.model;
 
 public enum Architecture {
     X86("386", "x86"),
+    X86_64("amd64", "x86_64"),
     AMD64("amd64", "amd64"),
     ARM("arm", "arm"),
     PPC64("ppc64", null),
