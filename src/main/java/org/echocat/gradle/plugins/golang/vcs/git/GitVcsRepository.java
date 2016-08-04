@@ -12,11 +12,12 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.regex.Pattern;
 
-import static org.apache.commons.io.FileUtils.deleteDirectory;
+import static org.echocat.gradle.plugins.golang.utils.FileUtils.delete;
+import static org.echocat.gradle.plugins.golang.utils.FileUtils.deleteQuietly;
 import static org.echocat.gradle.plugins.golang.vcs.git.GitVcsUri.gitVcsUriFor;
 
 public class GitVcsRepository extends VcsRepositorySupport {
@@ -45,7 +46,7 @@ public class GitVcsRepository extends VcsRepositorySupport {
 
     @Override
     @Nonnull
-    public VcsFullReference downloadToInternal(@Nonnull File targetDirectory) throws VcsException {
+    public VcsFullReference downloadToInternal(@Nonnull Path targetDirectory) throws VcsException {
         Ref ref = null;
         final GitVcsUri uri = gitVcsUriFor(getReference());
         final Git git;
@@ -58,7 +59,7 @@ public class GitVcsRepository extends VcsRepositorySupport {
             LOGGER.debug("Clone remote refs from {}@{} to {}...", uri, refName, targetDirectory);
             git = Git.cloneRepository()
                 .setURI(uri.getUri().toString())
-                .setDirectory(targetDirectory)
+                .setDirectory(targetDirectory.toFile())
                 .setBranch(refName)
                 .call();
             LOGGER.debug("Clone remote refs from {}@{} to {}... DONE!", uri, refName, targetDirectory);
@@ -70,13 +71,9 @@ public class GitVcsRepository extends VcsRepositorySupport {
         return new VcsFullReference(getReference(), fullRevision);
     }
 
-    protected void removeGitDirectoryIfNeeded(@Nonnull File targetDirectory, @Nonnull Git git) throws VcsException {
-        try {
-            git.getRepository().close();
-            deleteDirectory(new File(targetDirectory, ".git"));
-        } catch (final IOException e) {
-            throw new VcsException("Cannot cleanup " + targetDirectory + ".", e);
-        }
+    protected void removeGitDirectoryIfNeeded(@Nonnull Path targetDirectory, @Nonnull Git git) throws VcsException {
+        git.getRepository().close();
+        deleteQuietly(targetDirectory.resolve(".git"));
     }
 
     @Nonnull

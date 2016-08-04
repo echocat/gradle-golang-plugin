@@ -5,15 +5,16 @@ import org.echocat.gradle.plugins.golang.DependencyHandler.GetResult;
 import org.echocat.gradle.plugins.golang.model.*;
 
 import javax.annotation.Nonnull;
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import static java.lang.Boolean.TRUE;
-import static org.apache.commons.io.FileUtils.forceMkdir;
+import static java.nio.file.Files.exists;
 import static org.echocat.gradle.plugins.golang.DependencyHandler.GetResult.downloaded;
 import static org.echocat.gradle.plugins.golang.model.Platform.currentPlatform;
 import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
+import static org.echocat.gradle.plugins.golang.utils.FileUtils.delete;
 
 public class GetTools extends GolangTask {
 
@@ -45,10 +46,10 @@ public class GetTools extends GolangTask {
         final BuildSettings build = getBuild();
         final ToolchainSettings toolchain = getToolchain();
         final Platform platform = currentPlatform();
-        final File targetBinaryFilename = targetBinaryFilename(dependency);
+        final Path targetBinaryFilename = targetBinaryFilename(dependency);
 
-        if (getResult == downloaded || !targetBinaryFilename.exists()) {
-            forceMkdir(targetBinaryFilename.getParentFile());
+        if (getResult == downloaded || !exists(targetBinaryFilename)) {
+            delete(targetBinaryFilename.getParent());
 
             executor()
                 .executable(toolchain.getGoBinary())
@@ -58,7 +59,7 @@ public class GetTools extends GolangTask {
                 .env("GOOS", platform.getOperatingSystem().getNameInGo())
                 .env("GOARCH", platform.getArchitecture().getNameInGo())
                 .env("CGO_ENABLED", TRUE.equals(toolchain.getCgoEnabled()) ? "1" : "0")
-                .arguments("build", "-o", targetBinaryFilename.getPath(), dependency.getGroup())
+                .arguments("build", "-o", targetBinaryFilename, dependency.getGroup())
                 .execute();
             return true;
         } else {
@@ -67,15 +68,15 @@ public class GetTools extends GolangTask {
     }
 
     @Nonnull
-    protected File targetBinaryFilename(@Nonnull GolangDependency dependency) throws Exception {
+    protected Path targetBinaryFilename(@Nonnull GolangDependency dependency) throws Exception {
         final String extension = getBuild().platformExtensionFor(currentPlatform());
         final String filename = dependency.getGroup() + extension;
-        return new File(targetBinaryDirectory(), filename);
+        return targetBinaryDirectory().resolve(filename);
     }
 
     @Nonnull
-    protected File targetBinaryDirectory() throws Exception {
-        return new File(getProject().getBuildDir(), "tools").getCanonicalFile();
+    protected Path targetBinaryDirectory() throws Exception {
+        return getProject().getBuildDir().toPath().resolve("tools").toAbsolutePath();
     }
 
 }

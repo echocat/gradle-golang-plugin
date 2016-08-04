@@ -6,7 +6,8 @@ import org.gradle.api.Project;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -18,7 +19,7 @@ public class BuildSettings {
 
     @Nonnull
     private final Project _project;
-    private File _gopath;
+    private Path _gopath;
     private Boolean _useTemporaryGopath;
     private String[] _includes;
     private String[] _excludes;
@@ -69,7 +70,7 @@ public class BuildSettings {
     @Argument("-linkshared")
     private Boolean _linkShared;
     @Argument("-pkgdir")
-    private File _pkgDir;
+    private Path _pkgDir;
     @Argument("-tags")
     private String _tags;
     @Argument("-toolexec")
@@ -84,20 +85,23 @@ public class BuildSettings {
         if (initialize) {
             final String gopath = System.getenv("GOPATH");
             if (isNotEmpty(gopath)) {
-                _gopath = new File(gopath);
+                _gopath = Paths.get(gopath).toAbsolutePath();
             }
-            _outputFilenamePattern = project.getBuildDir() + File.separator + "out" + File.separator + project.getProjectDir().getName() + "-%{platform}%{extension}";
+            _outputFilenamePattern = project.getBuildDir().toPath().resolve("out").resolve(project.getName()) + "-%{platform}%{extension}";
             _excludes = new String[]{
                 ".git/**", ".svn/**", "build.gradle", "build/**", ".gradle/**", "gradle/**"
             };
         }
     }
 
-    public File getGopath() {
+    public Path getGopath() {
         return _gopath;
     }
 
-    public void setGopath(File gopath) {
+    public void setGopath(Path gopath) {
+        if (gopath == null) {
+            throw new NullPointerException("null for gopath provided.");
+        }
         _gopath = gopath;
     }
 
@@ -237,11 +241,11 @@ public class BuildSettings {
         _linkShared = linkShared;
     }
 
-    public File getPkgDir() {
+    public Path getPkgDir() {
         return _pkgDir;
     }
 
-    public void setPkgDir(File pkgDir) {
+    public void setPkgDir(Path pkgDir) {
         _pkgDir = pkgDir;
     }
 
@@ -278,8 +282,8 @@ public class BuildSettings {
     }
 
     @Nonnull
-    public File outputFilenameFor(@Nonnull Platform platform) {
-        return new File(replacePlaceholdersFor(platform, getOutputFilenamePattern()));
+    public Path outputFilenameFor(@Nonnull Platform platform) {
+        return Paths.get(replacePlaceholdersFor(platform, getOutputFilenamePattern()));
     }
 
     @Nonnull
@@ -322,6 +326,11 @@ public class BuildSettings {
             return ".exe";
         }
         return "";
+    }
+
+    @Nonnull
+    public Path getGopathSourceRoot() {
+        return getGopath().resolve("src");
     }
 
     @Nonnull

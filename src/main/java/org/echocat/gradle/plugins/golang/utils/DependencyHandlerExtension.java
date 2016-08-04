@@ -90,7 +90,7 @@ public class DependencyHandlerExtension {
     }
 
     @Nonnull
-    public Dependency doAdd(@Nonnull String configurationName, @Nonnull Dependency dependency) {
+    protected Dependency doAdd(@Nonnull String configurationName, @Nonnull Dependency dependency) {
         final Configuration configuration = _configurationContainer.getByName(configurationName);
         configuration.getDependencies().add(dependency);
         return dependency;

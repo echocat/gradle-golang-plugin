@@ -1,22 +1,20 @@
 package org.echocat.gradle.plugins.golang.tasks;
 
 import org.apache.commons.lang3.StringUtils;
-import org.echocat.gradle.plugins.golang.model.BuildSettings;
-import org.echocat.gradle.plugins.golang.model.GolangSettings;
-import org.echocat.gradle.plugins.golang.model.Platform;
-import org.echocat.gradle.plugins.golang.model.ToolchainSettings;
+import org.echocat.gradle.plugins.golang.model.*;
+import org.echocat.gradle.plugins.golang.model.GolangDependency.Type;
 import org.echocat.gradle.plugins.golang.utils.Executor;
 import org.echocat.gradle.plugins.golang.utils.Executor.ExecutionFailedExceptionProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Map;
 
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static org.echocat.gradle.plugins.golang.model.GolangDependency.newDependency;
 
 public class Build extends GolangTask {
 
@@ -43,24 +41,30 @@ public class Build extends GolangTask {
 
     @Override
     public void run() throws Exception {
-        getDependencyHandler().get("build");
+        final BuildSettings build = getBuild();
+        final String packageName = getGolang().getPackageName();
+        final GolangDependency targetPackage = newDependency(packageName)
+            .setType(Type.source)
+            .setLocation(build.getGopathSourceRoot().resolve(packageName));
+        getDependencyHandler().get("build", targetPackage
+        );
         for (final Platform platform : getGolang().getParsedPlatforms()) {
-            executeFor(platform);
+            executeFor(platform, targetPackage);
         }
     }
 
-    protected void executeFor(@Nonnull Platform platform) throws Exception {
+    protected void executeFor(@Nonnull Platform platform, @Nonnull GolangDependency targetPackage) throws Exception {
         final GolangSettings settings = getGolang();
         final ToolchainSettings toolchain = getToolchain();
         final BuildSettings build = getBuild();
 
-        final Path expectedPackagePath = settings.packagePathFor(build.getGopath()).toPath();
-        final Path projectBasedir = settings.getProjectBasedir().toPath();
+        final Path expectedPackagePath = settings.packagePathFor(build.getGopath());
+        final Path projectBasedir = settings.getProjectBasedir();
         if (!expectedPackagePath.startsWith(projectBasedir)) {
-            throw new IllegalStateException("Project '" + settings.getPackageName() + "' is not part of GOPATH (" + build.getGopath() + "). Current location: " + projectBasedir);
+            throw new IllegalStateException("Project '" + targetPackage.getGroup() + "' is not part of GOPATH (" + build.getGopath() + "). Current location: " + projectBasedir);
         }
 
-        final File outputFilename = build.outputFilenameFor(platform);
+        final Path outputFilename = build.outputFilenameFor(platform);
         LOGGER.debug("Building {}...", outputFilename);
 
         final Executor executor = Executor.executor()
@@ -86,7 +90,7 @@ public class Build extends GolangTask {
             executor.arguments("-ldflags", ldFlags);
         }
 
-        executor.argument(settings.getPackageName());
+        executor.argument(targetPackage.getGroup());
 
         executor.execute(EXCEPTION_PRODUCER);
 

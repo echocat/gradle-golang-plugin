@@ -3,8 +3,8 @@ package org.echocat.gradle.plugins.golang.utils;
 import org.slf4j.Logger;
 
 import javax.annotation.Nonnull;
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 public class LoggingOutputStream extends OutputStream {
 

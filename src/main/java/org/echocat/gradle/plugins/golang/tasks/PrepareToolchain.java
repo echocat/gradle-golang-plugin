@@ -1,25 +1,28 @@
 package org.echocat.gradle.plugins.golang.tasks;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.echocat.gradle.plugins.golang.Version;
 import org.echocat.gradle.plugins.golang.model.*;
 import org.echocat.gradle.plugins.golang.utils.ArchiveUtils;
-import org.echocat.gradle.plugins.golang.utils.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 
-import static java.io.File.createTempFile;
 import static java.lang.Boolean.TRUE;
 import static java.net.URI.create;
-import static org.apache.commons.io.FileUtils.forceMkdir;
-import static org.apache.commons.io.FileUtils.readFileToString;
-import static org.apache.commons.io.FileUtils.writeStringToFile;
+import static java.nio.file.Files.*;
+import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
+import static org.echocat.gradle.plugins.golang.utils.FileUtils.createDirectoriesIfRequired;
+import static org.echocat.gradle.plugins.golang.utils.FileUtils.deleteQuietly;
 
 public class PrepareToolchain extends GolangTask {
 
@@ -77,26 +80,26 @@ public class PrepareToolchain extends GolangTask {
 
     protected boolean buildToolIfRequired(String name) throws Exception {
         final ToolchainSettings toolchain = getToolchain();
-        final File goBinary = toolchain.getGoBinary();
-        final File binDirectory = goBinary.getParentFile();
-        final File toolBinary = new File(binDirectory, name + toolchain.getExecutableSuffix());
-        final File toolBinaryInfo = new File(binDirectory, name + ".info");
+        final Path goBinary = toolchain.getGoBinary();
+        final Path binDirectory = goBinary.getParent();
+        final Path toolBinary = binDirectory.resolve(name + toolchain.getExecutableSuffix());
+        final Path toolBinaryInfo = binDirectory.resolve(name + ".info");
         final String info = name + ":" + Version.GROUP + ":" + Version.VERSION;
-        if (toolBinary.exists() && toolBinaryInfo.exists()) {
-            final String foundInfo = readFileToString(toolBinaryInfo);
+        if (exists(toolBinary) && exists(toolBinaryInfo)) {
+            final String foundInfo = new String(readAllBytes(toolBinaryInfo), "UTF-8");
             if (foundInfo.equals(info)) {
                 return false;
             }
         }
 
-        final File sourceTempFile = createTempFile(name, ".go");
+        final Path sourceTempFile = createTempFile(name, ".go");
         try {
             final InputStream is = getClass().getClassLoader().getResourceAsStream("org/echocat/gradle/plugins/golang/utils/" + name + ".go");
             if (is == null) {
                 throw new FileNotFoundException("Could not find source code for tool " + name + " in classpath.");
             }
             try {
-                try (final OutputStream os = new FileOutputStream(sourceTempFile)) {
+                try (final OutputStream os = Files.newOutputStream(sourceTempFile)) {
                     IOUtils.copy(is, os);
                 }
             } finally {
@@ -104,21 +107,20 @@ public class PrepareToolchain extends GolangTask {
                 is.close();
             }
 
-            forceMkdir(binDirectory);
+            createDirectoriesIfRequired(binDirectory);
 
-            Executor.executor()
+            executor()
                 .executable(goBinary)
-                .arguments("build", "-o", toolBinary.getPath(), sourceTempFile.getPath())
+                .arguments("build", "-o", toolBinary, sourceTempFile)
                 .removeEnv("GOPATH")
                 .env("GOROOT", toolchain.getGoroot())
                 .env("GOROOT_BOOTSTRAP", toolchain.getBootstrapGoroot())
                 .execute();
         } finally {
-            //noinspection ResultOfMethodCallIgnored
-            sourceTempFile.delete();
+            deleteQuietly(sourceTempFile);
         }
 
-        writeStringToFile(toolBinaryInfo, info);
+        write(toolBinaryInfo, info.getBytes("UTF-8"));
         return true;
     }
 
@@ -126,14 +128,14 @@ public class PrepareToolchain extends GolangTask {
         final ToolchainSettings toolchain = getToolchain();
         final String goos = platform.getOperatingSystem().getNameInGo();
         final String goarch = platform.getArchitecture().getNameInGo();
-        final File buildMarker = new File(toolchain.getGoroot(), "pkg" + File.separator + goos + "_" + goarch + File.separator + ".builded");
-        if (force || !buildMarker.exists()) {
-            final File sourceDirectory = new File(toolchain.getGoroot(), "src");
-            final File makeScript = new File(sourceDirectory, "make." + (OperatingSystem.currentOperatingSystem() == OperatingSystem.WINDOWS ? "bat" : "bash"));
+        final Path buildMarker = toolchain.getGoroot().resolve("pkg").resolve(goos + "_" + goarch).resolve(".builded");
+        if (force || !exists(buildMarker)) {
+            final Path sourceDirectory = toolchain.getGorootSourceRoot();
+            final Path makeScript = sourceDirectory.resolve("make." + (OperatingSystem.currentOperatingSystem() == OperatingSystem.WINDOWS ? "bat" : "bash"));
 
             LOGGER.info("Going to build go toolchain for {}...", platform);
 
-            Executor.executor()
+            executor()
                 .executable(makeScript)
                 .arguments("--no-clean")
                 .workingDirectory(sourceDirectory)
@@ -146,7 +148,7 @@ public class PrepareToolchain extends GolangTask {
                 .failKeywords("ERROR: ", "($GOPATH not set)", "Access denied")
                 .execute();
 
-            writeStringToFile(buildMarker, "");
+            write(buildMarker, new byte[0]);
             LOGGER.info("Going to build go toolchain for {}... DONE!", platform);
             return true;
         }
@@ -155,7 +157,7 @@ public class PrepareToolchain extends GolangTask {
 
     protected void downloadSourcesIfRequired() {
         final ToolchainSettings toolchain = getToolchain();
-        final File goroot = toolchain.getGoroot();
+        final Path goroot = toolchain.getGoroot();
         final String expectedVersion = toolchain.getGoversion();
 
         String version = readGoVersionFrom(goroot);
@@ -181,13 +183,13 @@ public class PrepareToolchain extends GolangTask {
         LOGGER.info("Go sources (version {}) successfully downloaded to {}.", version, goroot);
     }
 
-    protected String readGoVersionFrom(File goroot) {
-        final File file = new File(goroot, "VERSION");
-        if (file.isDirectory() || !file.canRead()) {
+    protected String readGoVersionFrom(Path goroot) {
+        final Path file = goroot.resolve("VERSION");
+        if (isDirectory(file) || !isReadable(file)) {
             return null;
         }
         try {
-            return readFileToString(file).trim();
+            return new String(readAllBytes(file), "UTF-8").trim();
         } catch (final IOException e) {
             throw new RuntimeException("Could not read " + file + ".", e);
         }
@@ -212,7 +214,7 @@ public class PrepareToolchain extends GolangTask {
         }
 
         final URI downloadUri = downloadUriForBootstrap();
-        final File bootstrapGoroot = toolchain.getBootstrapGoroot();
+        final Path bootstrapGoroot = toolchain.getBootstrapGoroot();
         LOGGER.info("There was no go bootstrap found. Going to download it from {} to {} ...", downloadUri, bootstrapGoroot);
         try {
             ArchiveUtils.download(downloadUri, bootstrapGoroot);

@@ -4,10 +4,12 @@ import org.echocat.gradle.plugins.golang.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static java.lang.Boolean.TRUE;
+import static java.nio.file.Files.isExecutable;
 import static org.apache.commons.lang3.StringUtils.*;
 import static org.echocat.gradle.plugins.golang.model.Platform.currentPlatform;
 
@@ -57,9 +59,9 @@ public class Validate extends GolangTask {
         final Settings settings = getGlobalSettings();
         final GolangSettings golang = settings.getGolang();
         final ToolchainSettings toolchain = settings.getToolchain();
-        final File goroot = toolchain.getGoroot();
+        final Path goroot = toolchain.getGoroot();
         if (goroot == null) {
-            toolchain.setGoroot(new File(golang.getCacheRoot(), "sdk" + File.separator + toolchain.getGoversion()));
+            toolchain.setGoroot(golang.getCacheRoot().resolve("sdk").resolve(toolchain.getGoversion()));
         }
     }
 
@@ -67,24 +69,24 @@ public class Validate extends GolangTask {
         final Settings settings = getGlobalSettings();
         final GolangSettings golang = settings.getGolang();
         final ToolchainSettings toolchain = settings.getToolchain();
-        final File bootstrapGoroot = toolchain.getBootstrapGoroot();
+        final Path bootstrapGoroot = toolchain.getBootstrapGoroot();
         if (bootstrapGoroot == null) {
             final String gorootEnv = System.getenv("GOROOT");
             if (isNotEmpty(gorootEnv)) {
-                final File goBinary = new File(gorootEnv, File.separator + "bin" + File.separator + "go" + toolchain.getExecutableSuffix());
-                if (goBinary.canExecute()) {
-                    toolchain.setBootstrapGoroot(new File(gorootEnv));
+                final Path goBinary = Paths.get(gorootEnv).resolve("bin").resolve("go" + toolchain.getExecutableSuffix());
+                if (isExecutable(goBinary)) {
+                    toolchain.setBootstrapGoroot(Paths.get(gorootEnv));
                     return;
                 }
             }
-            toolchain.setBootstrapGoroot(new File(golang.getCacheRoot(), "sdk" + File.separator + "bootstrap"));
+            toolchain.setBootstrapGoroot(golang.getCacheRoot().resolve("sdk").resolve("bootstrap"));
         }
     }
 
     protected void configureGopathIfNeeded() {
         final BuildSettings build = getGlobalSettings().getBuild();
         if (TRUE.equals(build.getUseTemporaryGopath())) {
-            build.setGopath(new File(getProject().getBuildDir(), "gopath"));
+            build.setGopath(getProject().getBuildDir().toPath().resolve("gopath"));
         }
     }
 

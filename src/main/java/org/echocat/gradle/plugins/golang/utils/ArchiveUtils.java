@@ -8,36 +8,45 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
-import static org.apache.commons.io.FileUtils.forceDelete;
-import static org.apache.commons.io.FileUtils.forceMkdir;
+import static java.nio.file.Files.*;
 import static org.apache.commons.io.FilenameUtils.getExtension;
 import static org.apache.commons.io.IOUtils.copy;
+import static org.echocat.gradle.plugins.golang.utils.FileUtils.createDirectoriesIfRequired;
+import static org.echocat.gradle.plugins.golang.utils.FileUtils.deleteQuietly;
+import static org.echocat.gradle.plugins.golang.utils.FileUtils.ensureParentOf;
 
 public class ArchiveUtils {
 
     private static final Pattern REMOVE_LEADING_GO_PATH_PATTERN = Pattern.compile("^(|\\./)go/");
 
-    public static void download(URI uri, File to) throws IOException {
-        if (to.exists()) {
-            forceDelete(to);
+    public static void download(URI uri, Path to) throws IOException {
+        if (exists(to)) {
+            deleteQuietly(to);
         }
-        forceMkdir(to);
+        createDirectoriesIfRequired(to);
 
         final OkHttpClient client = new OkHttpClient();
         final Request request = new Builder()
             .url(uri.toURL())
             .build();
 
-        final File tempFile = File.createTempFile("golang-maven-plugin", "." + getExtension(uri.toString()));
+        final Path tempFile = createTempFile("golang-maven-plugin", "." + getExtension(uri.toString()));
         try {
             try (final InputStream is = client.newCall(request).execute().body().byteStream()) {
-                try (final OutputStream os = new FileOutputStream(tempFile)) {
+                try (final OutputStream os = newOutputStream(tempFile)) {
                     copy(is, os);
                 }
             }
@@ -49,49 +58,57 @@ public class ArchiveUtils {
                 throw new IllegalStateException("Does not support download archive of type " + uri + ".");
             }
         } finally {
-            //noinspection ResultOfMethodCallIgnored
-            tempFile.delete();
+            deleteQuietly(tempFile);
         }
     }
 
-    public static void unTarGz(File file, File target) throws IOException {
-        try (final InputStream is = new FileInputStream(file)) {
+    public static void unTarGz(Path file, Path target) throws IOException {
+        try (final InputStream is = newInputStream(file)) {
             final InputStream gzip = new GZIPInputStream(is);
             final TarArchiveInputStream archive = new TarArchiveInputStream(gzip);
             TarArchiveEntry entry = archive.getNextTarEntry();
             while (entry != null) {
-                final File entryFile = new File(target, REMOVE_LEADING_GO_PATH_PATTERN.matcher(entry.getName()).replaceFirst("")).getCanonicalFile();
+                final Path entryFile = target.resolve(REMOVE_LEADING_GO_PATH_PATTERN.matcher(entry.getName()).replaceFirst("")).toAbsolutePath();
                 if (entry.isDirectory()) {
-                    forceMkdir(entryFile);
+                    createDirectoriesIfRequired(entryFile);
                 } else {
-                    forceMkdir(entryFile.getParentFile());
-                    try (final OutputStream os = new FileOutputStream(entryFile)) {
+                    ensureParentOf(entryFile);
+                    try (final OutputStream os = newOutputStream(entryFile)) {
                         copy(archive, os);
                     }
                     final int mode = entry.getMode();
+                    final Set<PosixFilePermission> perms = new HashSet<>();
+                    perms.add(PosixFilePermission.OWNER_READ);
+                    perms.add(PosixFilePermission.GROUP_READ);
+                    perms.add(PosixFilePermission.OTHERS_READ);
                     //noinspection OctalInteger,ResultOfMethodCallIgnored,IncompatibleBitwiseMaskOperation
-                    entryFile.setExecutable(
-                        (mode | 0100) > 0,
-                        !((mode | 0001) > 0)
-                    );
+                    if ((mode | 0001) > 0) {
+                        perms.add(PosixFilePermission.OWNER_EXECUTE);
+                    }
+                    //noinspection OctalInteger,ResultOfMethodCallIgnored,IncompatibleBitwiseMaskOperation
+                    if ((mode | 0100) > 0) {
+                        perms.add(PosixFilePermission.GROUP_EXECUTE);
+                        perms.add(PosixFilePermission.OTHERS_EXECUTE);
+                    }
+                    Files.setPosixFilePermissions(entryFile, perms);
                 }
                 entry = archive.getNextTarEntry();
             }
         }
     }
 
-    public static void unZip(File file, File target) throws IOException {
-        try (final ZipFile zipFile = new ZipFile(file)) {
+    public static void unZip(Path file, Path target) throws IOException {
+        try (final ZipFile zipFile = new ZipFile(file.toFile())) {
             final Enumeration<ZipArchiveEntry> files = zipFile.getEntriesInPhysicalOrder();
             while (files.hasMoreElements()) {
                 final ZipArchiveEntry entry = files.nextElement();
-                final File entryFile = new File(target, REMOVE_LEADING_GO_PATH_PATTERN.matcher(entry.getName()).replaceFirst("")).getCanonicalFile();
+                final Path entryFile = target.resolve(REMOVE_LEADING_GO_PATH_PATTERN.matcher(entry.getName()).replaceFirst("")).toAbsolutePath();
                 if (entry.isDirectory()) {
-                    forceMkdir(entryFile);
+                    createDirectoriesIfRequired(entryFile);
                 } else {
-                    forceMkdir(entryFile.getParentFile());
+                    ensureParentOf(entryFile);
                     try (final InputStream is = zipFile.getInputStream(entry)) {
-                        try (final OutputStream os = new FileOutputStream(entryFile)) {
+                        try (final OutputStream os = newOutputStream(entryFile)) {
                             copy(is, os);
                         }
                     }

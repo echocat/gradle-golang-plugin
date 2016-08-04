@@ -4,7 +4,7 @@ import org.gradle.api.Project;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
-import java.io.File;
+import java.nio.file.Path;
 
 public class DependenciesSettings {
 
@@ -13,13 +13,15 @@ public class DependenciesSettings {
 
     private Boolean _forceUpdate;
     private Boolean _deleteUnknownDependencies;
-    private File _dependencyCache;
+    private Boolean _deleteAllCachedDependenciesOnClean;
+    private Path _dependencyCache;
 
     @Inject
     public DependenciesSettings(boolean initialize, @Nonnull Project project) {
         _project = project;
         if (initialize) {
-            _dependencyCache = new File(project.getProjectDir(), "vendor");
+            _dependencyCache = project.getProjectDir().toPath().resolve("vendor");
+            _deleteUnknownDependencies = true;
         }
     }
 
@@ -39,11 +41,19 @@ public class DependenciesSettings {
         _deleteUnknownDependencies = deleteUnknownDependencies;
     }
 
-    public File getDependencyCache() {
+    public Boolean getDeleteAllCachedDependenciesOnClean() {
+        return _deleteAllCachedDependenciesOnClean;
+    }
+
+    public void setDeleteAllCachedDependenciesOnClean(Boolean deleteAllCachedDependenciesOnClean) {
+        _deleteAllCachedDependenciesOnClean = deleteAllCachedDependenciesOnClean;
+    }
+
+    public Path getDependencyCache() {
         return _dependencyCache;
     }
 
-    public void setDependencyCache(File dependencyCache) {
+    public void setDependencyCache(Path dependencyCache) {
         _dependencyCache = dependencyCache;
     }
 

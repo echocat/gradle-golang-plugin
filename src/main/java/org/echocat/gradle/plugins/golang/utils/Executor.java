@@ -8,6 +8,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -29,12 +31,12 @@ public class Executor {
     };
 
     private final Map<String, String> _environment = new HashMap<>(System.getenv());
-    private final List<String> _arguments = new ArrayList<>();
+    private final List<Object> _arguments = new ArrayList<>();
     private final OutputStream _stdout;
     private final OutputStream _stderr;
 
-    private File _workingDirectory;
-    private File _executable;
+    private Path _workingDirectory;
+    private Path _executable;
     private final Set<String> _failKeywords = new HashSet<>();
 
     @Nonnull
@@ -80,30 +82,30 @@ public class Executor {
     }
 
     @Nonnull
-    public Executor executable(File executable) {
+    public Executor executable(Path executable) {
         _executable = executable;
         return this;
     }
 
     @Nonnull
     public Executor executable(String executable) {
-        return executable(new File(executable));
+        return executable(Paths.get(executable));
     }
 
     @Nonnull
-    public Executor workingDirectory(File workingDirectory) {
+    public Executor workingDirectory(Path workingDirectory) {
         _workingDirectory = workingDirectory;
         return this;
     }
 
     @Nonnull
-    public Executor argument(String argument) {
+    public Executor argument(Object argument) {
         _arguments.add(argument);
         return this;
     }
 
     @Nonnull
-    public Executor arguments(String... arguments) {
+    public Executor arguments(Object... arguments) {
         if (arguments != null) {
             Collections.addAll(_arguments, arguments);
         }
@@ -111,7 +113,7 @@ public class Executor {
     }
 
     @Nonnull
-    public Executor arguments(Collection<String> arguments) {
+    public Executor arguments(Collection<Object> arguments) {
         if (arguments != null) {
             _arguments.addAll(arguments);
         }
@@ -138,7 +140,8 @@ public class Executor {
     @Nonnull
     public <T extends Throwable> Executor execute(ExecutionFailedExceptionProducer<T> executionFailedExceptionProducer) throws T, IOException {
         final String[] commandLine = commandLine();
-        final Process process = getRuntime().exec(commandLine, envp(), _workingDirectory);
+        final File workingDirectory = _workingDirectory != null ? _workingDirectory.toFile() : null;
+        final Process process = getRuntime().exec(commandLine, envp(), workingDirectory);
         try (final ProcessOutput po = new ProcessOutput(process, _stdout, _stderr)) {
             try {
                 try {
@@ -201,15 +204,15 @@ public class Executor {
 
     @Nonnull
     protected String[] commandLine() throws IOException {
-        final File executable = _executable;
+        final Path executable = _executable;
         if (executable == null) {
             throw new IOException("There was no executable provided.");
         }
         final String[] result = new String[_arguments.size() + 1];
         int i = 0;
-        result[i++] = _executable.getCanonicalPath();
-        for (final String argument : _arguments) {
-            result[i++] = argument;
+        result[i++] = _executable.toAbsolutePath().toString();
+        for (final Object argument : _arguments) {
+            result[i++] = argument != null ? argument.toString() : "";
         }
         return result;
     }
@@ -260,8 +263,8 @@ public class Executor {
     public String toString() {
         final StringBuilder sb = new StringBuilder();
         sb.append(_executable);
-        for (final String argument : _arguments) {
-            sb.append(' ').append(argument);
+        for (final Object argument : _arguments) {
+            sb.append(' ').append(argument != null ? argument : "");
         }
         return sb.toString();
     }

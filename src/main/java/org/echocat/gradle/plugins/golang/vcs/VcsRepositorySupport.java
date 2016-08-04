@@ -1,7 +1,9 @@
 package org.echocat.gradle.plugins.golang.vcs;
 
-import com.google.gson.*;
-import org.apache.commons.io.FileUtils;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSyntaxException;
 import org.echocat.gradle.plugins.golang.Constants;
 import org.echocat.gradle.plugins.golang.model.UpdatePolicy;
 import org.echocat.gradle.plugins.golang.model.VcsRepositoryInfo;
@@ -9,11 +11,13 @@ import org.echocat.gradle.plugins.golang.model.VcsRepositoryInfo;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.*;
+import java.nio.file.Path;
 import java.util.Objects;
 
-import static java.io.File.separatorChar;
 import static java.lang.System.currentTimeMillis;
-import static org.apache.commons.io.FileUtils.forceMkdir;
+import static java.nio.file.Files.*;
+import static org.echocat.gradle.plugins.golang.utils.FileUtils.createDirectoriesIfRequired;
+import static org.echocat.gradle.plugins.golang.utils.FileUtils.delete;
 
 public abstract class VcsRepositorySupport implements VcsRepository {
 
@@ -36,8 +40,8 @@ public abstract class VcsRepositorySupport implements VcsRepository {
 
     @Override
     @Nullable
-    public VcsFullReference updateIfRequired(@Nonnull File baseDirectory) throws VcsException {
-        final File targetDirectory = resolveTargetDirectoryFor(baseDirectory);
+    public VcsFullReference updateIfRequired(@Nonnull Path baseDirectory) throws VcsException {
+        final Path targetDirectory = resolveTargetDirectoryFor(baseDirectory);
         if (!isUpdateRequired(targetDirectory)) {
             return null;
         }
@@ -46,8 +50,8 @@ public abstract class VcsRepositorySupport implements VcsRepository {
 
     @Nonnull
     @Override
-    public VcsFullReference forceUpdate(@Nonnull File baseDirectory) throws VcsException {
-        final File targetDirectory = resolveTargetDirectoryFor(baseDirectory);
+    public VcsFullReference forceUpdate(@Nonnull Path baseDirectory) throws VcsException {
+        final Path targetDirectory = resolveTargetDirectoryFor(baseDirectory);
         emptyDirectoryIfExists(targetDirectory);
         final VcsFullReference result = downloadToInternal(targetDirectory);
         saveInfoFile(targetDirectory, result);
@@ -55,28 +59,26 @@ public abstract class VcsRepositorySupport implements VcsRepository {
     }
 
     @Nonnull
-    protected abstract VcsFullReference downloadToInternal(@Nonnull File targetDirectory) throws VcsException;
+    protected abstract VcsFullReference downloadToInternal(@Nonnull Path targetDirectory) throws VcsException;
 
     @Nonnull
-    protected File resolveTargetDirectoryFor(@Nonnull File baseDirectory) throws VcsException {
-        final File result = new File(baseDirectory, getReference().getId().replace('/', separatorChar));
-        if (!result.exists()) {
-            try {
-                forceMkdir(result);
-            } catch (final IOException e) {
-                throw new VcsException("Could not create target directory: " + result, e);
-            }
+    protected Path resolveTargetDirectoryFor(@Nonnull Path baseDirectory) throws VcsException {
+        final Path result = baseDirectory.resolve(getReference().getId());
+        try {
+            createDirectoriesIfRequired(result);
+        } catch (final IOException e) {
+            throw new VcsException("Could not create target directory: " + result, e);
         }
-        if (!result.isDirectory()) {
+        if (!isDirectory(result)) {
             throw new VcsException("Target directory is a file: " + result);
         }
         return result;
     }
 
-    protected void emptyDirectoryIfExists(@Nonnull File directory) throws VcsException {
-        if (directory.exists()) {
+    protected void emptyDirectoryIfExists(@Nonnull Path directory) throws VcsException {
+        if (exists(directory)) {
             try {
-                FileUtils.cleanDirectory(directory);
+                delete(directory);
             } catch (final IOException e) {
                 throw new VcsException("Could not empty target directory: " + directory, e);
             }
@@ -84,24 +86,24 @@ public abstract class VcsRepositorySupport implements VcsRepository {
     }
 
     @Nonnull
-    protected File infoFileFor(@Nonnull File targetDirectory) throws VcsException {
-        return new File(targetDirectory, Constants.VCS_REPOSITORY_INFO_FILE_NAME);
+    protected Path infoFileFor(@Nonnull Path targetDirectory) throws VcsException {
+        return targetDirectory.resolve(Constants.VCS_REPOSITORY_INFO_FILE_NAME);
     }
 
     @Nullable
-    protected VcsRepositoryInfo tryReadInfoFor(@Nonnull File targetDirectory) throws VcsException {
-        final File infoFile = infoFileFor(targetDirectory);
+    protected VcsRepositoryInfo tryReadInfoFor(@Nonnull Path targetDirectory) throws VcsException {
+        final Path infoFile = infoFileFor(targetDirectory);
         final VcsReference reference = getReference();
         if (reference.getType() == VcsType.manual) {
             throw new IllegalStateException("It is not possible to update manual vcs repositories in this way.");
         }
-        if (!infoFile.exists()) {
+        if (!exists(infoFile)) {
             return null;
         }
-        if (!infoFile.isFile()) {
+        if (!isRegularFile(infoFile)) {
             throw new VcsException(infoFile + " is expected to be an file but it isn't.");
         }
-        try (final InputStream is = new FileInputStream(infoFile)) {
+        try (final InputStream is = newInputStream(infoFile)) {
             try (final Reader reader = new InputStreamReader(is, "UTF-8")) {
                 return _gson.fromJson(reader, VcsRepositoryInfo.class);
             }
@@ -110,7 +112,7 @@ public abstract class VcsRepositorySupport implements VcsRepository {
         }
     }
 
-    protected boolean isUpdateRequired(@Nonnull File targetDirectory) throws VcsException {
+    protected boolean isUpdateRequired(@Nonnull Path targetDirectory) throws VcsException {
         return isUpdateRequired(tryReadInfoFor(targetDirectory));
     }
 
@@ -126,9 +128,9 @@ public abstract class VcsRepositorySupport implements VcsRepository {
         return updatePolicy.updateRequired(info.getLastUpdatedMillis());
     }
 
-    protected void saveInfoFile(@Nonnull File targetDirectory, @Nonnull VcsRepositoryInfo info) throws VcsException {
-        final File infoFile = infoFileFor(targetDirectory);
-        try (final OutputStream os = new FileOutputStream(infoFile)) {
+    protected void saveInfoFile(@Nonnull Path targetDirectory, @Nonnull VcsRepositoryInfo info) throws VcsException {
+        final Path infoFile = infoFileFor(targetDirectory);
+        try (final OutputStream os = newOutputStream(infoFile)) {
             try (final Writer writer = new OutputStreamWriter(os, "UTF-8")) {
                 _gson.toJson(info, writer);
             }
@@ -137,7 +139,7 @@ public abstract class VcsRepositorySupport implements VcsRepository {
         }
     }
 
-    protected void saveInfoFile(@Nonnull File targetDirectory, @Nonnull VcsFullReference fullReference) throws VcsException {
+    protected void saveInfoFile(@Nonnull Path targetDirectory, @Nonnull VcsFullReference fullReference) throws VcsException {
         final VcsReference reference = getReference();
         final VcsRepositoryInfo info = new VcsRepositoryInfo()
             .setType(reference.getType())

@@ -1,7 +1,7 @@
 package org.echocat.gradle.plugins.golang.vcs.isps;
 
-import org.echocat.gradle.plugins.golang.vcs.VcsException;
 import org.echocat.gradle.plugins.golang.vcs.RawVcsReference;
+import org.echocat.gradle.plugins.golang.vcs.VcsException;
 import org.echocat.gradle.plugins.golang.vcs.VcsType;
 
 import javax.annotation.Nonnull;

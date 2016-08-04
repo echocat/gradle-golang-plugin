@@ -6,7 +6,8 @@ import org.gradle.api.Project;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 
 public class TestingSettings {
@@ -302,9 +303,9 @@ public class TestingSettings {
         _coverProfile = coverProfile;
     }
 
-    public File getCoverProfileFile() {
+    public Path getCoverProfileFile() {
         final String plain = _coverProfile;
-        return plain != null ? new File(plain) : null;
+        return plain != null ? Paths.get(plain) : null;
     }
 
     public String getCoverProfileHtml() {
@@ -315,9 +316,9 @@ public class TestingSettings {
         _coverProfileHtml = coverProfileHtml;
     }
 
-    public File getCoverProfileHtmlFile() {
+    public Path getCoverProfileHtmlFile() {
         final String plain = _coverProfileHtml;
-        return plain != null ? new File(plain) : null;
+        return plain != null ? Paths.get(plain) : null;
     }
 
     public String getCpu() {

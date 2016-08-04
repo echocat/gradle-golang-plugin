@@ -1,9 +1,11 @@
 package org.echocat.gradle.plugins.golang.tasks;
 
-import java.io.File;
+import org.echocat.gradle.plugins.golang.DependencyHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -17,6 +19,8 @@ import static java.nio.file.Files.*;
 
 public class Clean extends GolangTask {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(Clean.class);
+
     public Clean() {
         setGroup("build");
         dependsOn(
@@ -26,43 +30,60 @@ public class Clean extends GolangTask {
 
     @Override
     public void run() throws Exception {
+        deleteBuildDirIfRequired();
+        final DependencyHandler dependencyHandler = getDependencyHandler();
+        dependencyHandler.deleteUnknownDependenciesIfRequired();
+        dependencyHandler.deleteAllCachedDependenciesIfRequired();
+    }
+
+    protected void deleteBuildDirIfRequired() throws IOException {
         final Path path = getProject().getBuildDir().toPath();
         if (exists(path)) {
             final Set<Path> doNotCleanSubTreeOfThisPaths = doNotCleanSubTreeOfThisPaths();
 
-
             walkFileTree(path, new SimpleFileVisitor<Path>() {
                 @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    delete(file);
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    try {
+                        deleteIfExists(file);
+                    } catch (final IOException e) {
+                        LOGGER.warn("Could not delete file {}.", file, e);
+                    }
                     return CONTINUE;
                 }
 
                 @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
                     if (doNotCleanSubTreeOfThisPaths.contains(dir) || isSymbolicLink(dir)) {
-                        delete(dir);
+                        try {
+                            deleteIfExists(dir);
+                        } catch (final IOException e) {
+                            LOGGER.warn("Could not delete dir {}.", dir, e);
+                        }
                         return SKIP_SUBTREE;
                     }
                     return CONTINUE;
                 }
 
                 @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                    delete(dir);
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                    try {
+                        deleteIfExists(dir);
+                    } catch (final IOException e) {
+                        LOGGER.warn("Could not delete dir {}.", dir, e);
+                    }
                     return CONTINUE;
                 }
 
             });
         }
-        getDependencyHandler().deleteUnknownDependenciesIfRequired();
     }
 
     protected Set<Path> doNotCleanSubTreeOfThisPaths() {
         final Set<Path> results = new HashSet<>();
         if (TRUE.equals(getBuild().getUseTemporaryGopath())) {
-            final File packagePath = getGolang().packagePathFor(getBuild().getGopath());
-            final Path packageVendorPath = new File(packagePath, "vendor").toPath();
+            final Path packagePath = getGolang().packagePathFor(getBuild().getGopath());
+            final Path packageVendorPath = packagePath.resolve("vendor");
             results.add(packageVendorPath);
         }
         return results;

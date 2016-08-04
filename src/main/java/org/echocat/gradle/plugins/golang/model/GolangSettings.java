@@ -1,16 +1,15 @@
 package org.echocat.gradle.plugins.golang.model;
 
 import org.gradle.api.Project;
-import org.gradle.api.plugins.ExtensionAware;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static org.echocat.gradle.plugins.golang.model.Platform.toPlatforms;
-import static org.echocat.gradle.plugins.golang.utils.BeanUtils.copyNonNulls;
 
 public class GolangSettings {
 
@@ -20,14 +19,14 @@ public class GolangSettings {
     private String _platforms;
     private String _packageName;
     private Platform _hostPlatform;
-    private File _cacheRoot;
+    private Path _cacheRoot;
 
     @Inject
     public GolangSettings(boolean initialize, @Nonnull Project project) {
         _project = project;
         if (initialize) {
             _platforms = "linux-386,linux-amd64,windows-386,windows-amd64,darwin-amd64";
-            _cacheRoot = new File(System.getProperty("user.home", "."), ".go");
+            _cacheRoot = Paths.get(System.getProperty("user.home", ".")).resolve(".go");
         }
     }
 
@@ -55,11 +54,11 @@ public class GolangSettings {
         _hostPlatform = hostPlatform;
     }
 
-    public File getCacheRoot() {
+    public Path getCacheRoot() {
         return _cacheRoot;
     }
 
-    public void setCacheRoot(File cacheRoot) {
+    public void setCacheRoot(Path cacheRoot) {
         _cacheRoot = cacheRoot;
     }
 
@@ -73,18 +72,14 @@ public class GolangSettings {
     }
 
     @Nonnull
-    public File packagePathFor(@Nonnull File gopath) {
-        try {
-            return new File(gopath, "src/" + getPackageName()).getCanonicalFile();
-        } catch (final IOException e) {
-            throw new RuntimeException("Could not resolve path of package '" + getPackageName() + "' in gopath '" + gopath + ".", e);
-        }
+    public Path packagePathFor(@Nonnull Path gopath) {
+        return gopath.resolve("src").resolve(getPackageName()).toAbsolutePath();
     }
 
     @Nonnull
-    public File getProjectBasedir() {
+    public Path getProjectBasedir() {
         try {
-            return _project.getProjectDir().getCanonicalFile();
+            return _project.getProjectDir().getCanonicalFile().toPath();
         } catch (final IOException e) {
             throw new RuntimeException("Could not resolve basedir of project.", e);
         }

@@ -2,7 +2,7 @@ package org.echocat.gradle.plugins.golang.vcs;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.File;
+import java.nio.file.Path;
 
 public interface VcsRepository {
 
@@ -12,9 +12,9 @@ public interface VcsRepository {
     public boolean isWorking() throws VcsException;
 
     @Nullable
-    public VcsFullReference updateIfRequired(@Nonnull File baseDirectory) throws VcsException;
+    public VcsFullReference updateIfRequired(@Nonnull Path baseDirectory) throws VcsException;
 
     @Nonnull
-    public VcsFullReference forceUpdate(@Nonnull File baseDirectory) throws VcsException;
+    public VcsFullReference forceUpdate(@Nonnull Path baseDirectory) throws VcsException;
 
 }

@@ -7,13 +7,13 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.io.File.separator;
+import static java.nio.file.Files.isExecutable;
 import static java.util.regex.Pattern.compile;
 import static org.echocat.gradle.plugins.golang.model.OperatingSystem.WINDOWS;
 import static org.echocat.gradle.plugins.golang.model.OperatingSystem.currentOperatingSystem;
@@ -28,9 +28,9 @@ public class ToolchainSettings {
 
     private Boolean _forceBuildToolchain;
     private String _goversion;
-    private File _goroot;
+    private Path _goroot;
     private Boolean _cgoEnabled;
-    private File _bootstrapGoroot;
+    private Path _bootstrapGoroot;
     private URI _downloadUriRoot;
 
     @Inject
@@ -58,11 +58,11 @@ public class ToolchainSettings {
         _goversion = goversion;
     }
 
-    public File getGoroot() {
+    public Path getGoroot() {
         return _goroot;
     }
 
-    public void setGoroot(File goroot) {
+    public void setGoroot(Path goroot) {
         _goroot = goroot;
     }
 
@@ -74,11 +74,11 @@ public class ToolchainSettings {
         _cgoEnabled = cgoEnabled;
     }
 
-    public File getBootstrapGoroot() {
+    public Path getBootstrapGoroot() {
         return _bootstrapGoroot;
     }
 
-    public void setBootstrapGoroot(File bootstrapGoroot) {
+    public void setBootstrapGoroot(Path bootstrapGoroot) {
         _bootstrapGoroot = bootstrapGoroot;
     }
 
@@ -91,9 +91,9 @@ public class ToolchainSettings {
     }
 
     @Nullable
-    public String goBinaryVersionOf(File goroot) {
-        final File goBinary = goBinaryOf(goroot);
-        if (!goBinary.canExecute()) {
+    public String goBinaryVersionOf(Path goroot) {
+        final Path goBinary = goBinaryOf(goroot);
+        if (!isExecutable(goBinary)) {
             return null;
         }
         final String stdout;
@@ -117,7 +117,7 @@ public class ToolchainSettings {
     }
 
     @Nonnull
-    public File goBinaryOf(File goroot) {
+    public Path goBinaryOf(Path goroot) {
         if (goroot == null) {
             throw new IllegalArgumentException("There was no goroot provided.");
         }
@@ -125,21 +125,30 @@ public class ToolchainSettings {
     }
 
     @Nonnull
-    public File getGoBinary() {
+    public Path getGoBinary() {
         return toolchainBinary("go");
     }
 
     @Nonnull
-    public File toolchainBinaryOf(String name, File goroot) {
+    public Path toolchainBinaryOf(String name, Path goroot) {
         if (goroot == null) {
             throw new IllegalArgumentException("There was no goroot provided.");
         }
-        return new File(goroot, separator + "bin" + separator + name + getExecutableSuffix());
+        return goroot.resolve("bin").resolve(name + getExecutableSuffix());
     }
 
     @Nonnull
-    public File toolchainBinary(String name) {
+    public Path toolchainBinary(String name) {
         return toolchainBinaryOf(name, getGoroot());
+    }
+
+    @Nonnull
+    public Path getGorootSourceRoot() {
+        final Path goroot = getGoroot();
+        if (goroot == null) {
+            throw new IllegalStateException("There is no goroot cofigured.");
+        }
+        return goroot.resolve("src");
     }
 
     @Nonnull

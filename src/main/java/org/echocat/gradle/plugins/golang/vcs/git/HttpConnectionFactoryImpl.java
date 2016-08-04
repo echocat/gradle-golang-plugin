@@ -9,23 +9,25 @@ import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Proxy;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.util.Collection;
 
-import static java.io.File.separator;
 import static java.lang.System.getProperty;
+import static java.nio.file.Files.isRegularFile;
+import static java.nio.file.Files.newInputStream;
 import static org.apache.commons.io.IOUtils.closeQuietly;
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 public class HttpConnectionFactoryImpl extends JDKHttpConnectionFactory {
 
@@ -98,13 +100,13 @@ public class HttpConnectionFactoryImpl extends JDKHttpConnectionFactory {
         }
 
         final String javaHome = getProperty("java.home");
-        final File jssecacertsFile = new File(javaHome + separator + "lib" + separator + "security" + separator + "jssecacerts");
-        if (jssecacertsFile.isFile()) {
-            return new FileInputStream(jssecacertsFile);
+        final Path jssecacertsFile = Paths.get(javaHome).resolve("lib").resolve("security").resolve("jssecacerts");
+        if (isRegularFile(jssecacertsFile)) {
+            return newInputStream(jssecacertsFile);
         }
-        final File cacertsFile = new File(javaHome + separator + "lib" + separator + "security" + separator + "cacerts");
-        if (cacertsFile.isFile()) {
-            return new FileInputStream(cacertsFile);
+        final Path cacertsFile = Paths.get(javaHome).resolve("lib").resolve("security").resolve("cacerts");
+        if (isRegularFile(cacertsFile)) {
+            return newInputStream(cacertsFile);
         }
         return null;
     }

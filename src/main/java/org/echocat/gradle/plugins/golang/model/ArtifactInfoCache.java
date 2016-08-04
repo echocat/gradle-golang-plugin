@@ -2,8 +2,8 @@ package org.echocat.gradle.plugins.golang.model;
 
 import com.google.gson.annotations.SerializedName;
 import org.echocat.gradle.plugins.golang.Version;
-import org.echocat.gradle.plugins.golang.vcs.VcsFullReference;
 import org.echocat.gradle.plugins.golang.vcs.RawVcsReference;
+import org.echocat.gradle.plugins.golang.vcs.VcsFullReference;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;

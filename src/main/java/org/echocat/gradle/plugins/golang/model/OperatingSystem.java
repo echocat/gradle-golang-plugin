@@ -1,8 +1,8 @@
 package org.echocat.gradle.plugins.golang.model;
 
+import static java.util.Locale.US;
 import static org.echocat.gradle.plugins.golang.model.PackageFormat.TGZ;
 import static org.echocat.gradle.plugins.golang.model.PackageFormat.ZIP;
-import static java.util.Locale.US;
 
 public enum OperatingSystem {
     WINDOWS("windows", "windows", ZIP),

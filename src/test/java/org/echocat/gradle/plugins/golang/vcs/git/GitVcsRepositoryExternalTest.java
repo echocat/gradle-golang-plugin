@@ -6,7 +6,7 @@ import org.junit.Test;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.File;
+import java.nio.file.Paths;
 
 import static org.echocat.gradle.plugins.golang.logging.DefaultLog.setDebugEnabled;
 import static org.echocat.gradle.plugins.golang.vcs.VcsReference.vcsReference;
@@ -27,7 +27,7 @@ public class GitVcsRepositoryExternalTest {
     @SuppressWarnings("ConstantConditions")
     @Test
     public void test() throws Exception {
-        new GitVcsRepository(referenceFor("refs/tags/v0.1.12")).updateIfRequired(new File("target/123"));
+        new GitVcsRepository(referenceFor("refs/tags/v0.1.12")).updateIfRequired(Paths.get("target/123"));
 
         assertThat(new GitVcsRepository(referenceFor(null)).resolveRemoteRef().getName(), equalTo("HEAD"));
         assertThat(new GitVcsRepository(referenceFor("master")).resolveRemoteRef().getName(), equalTo("refs/heads/master"));
