@@ -27,7 +27,7 @@ public class GitVcsRepositoryExternalTest {
     @SuppressWarnings("ConstantConditions")
     @Test
     public void test() throws Exception {
-        new GitVcsRepository(referenceFor("refs/tags/v0.1.12")).updateIfRequired(Paths.get("target/123"));
+        new GitVcsRepository(referenceFor("refs/tags/v0.1.12")).updateIfRequired(Paths.get("build/test/123"));
 
         assertThat(new GitVcsRepository(referenceFor(null)).resolveRemoteRef().getName(), equalTo("HEAD"));
         assertThat(new GitVcsRepository(referenceFor("master")).resolveRemoteRef().getName(), equalTo("refs/heads/master"));
