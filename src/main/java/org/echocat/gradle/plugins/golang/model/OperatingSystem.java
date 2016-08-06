@@ -7,7 +7,7 @@ import static java.util.Locale.US;
 public enum OperatingSystem {
     WINDOWS("windows", "windows", ZIP),
     LINUX("linux", "linux", TGZ),
-    DARWIN("darwin", "max os x", TGZ),
+    DARWIN("darwin", "mac os x", TGZ),
     FREEBSD("freebsd", "freebsd", TGZ),
     OPENBSD("openbsd", "openbsd", TGZ),
     NETBSD("netbsd", "netbsd", TGZ),
@@ -57,7 +57,7 @@ public enum OperatingSystem {
 
     public static OperatingSystem resolveForJava(String javaArchName) throws IllegalArgumentException {
         if (javaArchName != null) {
-            final String asLower = javaArchName.toLowerCase(US);
+            final String asLower = javaArchName.toLowerCase(US).trim();
             for (final OperatingSystem candidate : values()) {
                 if (candidate._nameInJava != null && asLower.startsWith(candidate._nameInJava)) {
                     return candidate;
