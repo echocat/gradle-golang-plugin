@@ -1,18 +1,19 @@
 plugins {
     id 'java'
     id 'maven'
-    id 'com.gradle.plugin-publish' version '0.9.4'
+    id 'com.gradle.plugin-publish' version '0.9.5'
+    id 'net.researchgate.release' version '2.4.0'
 }
 
 group 'org.echocat.gradle.plugins'
-description 'Plugin do build, test and do other stuff with Golang.'
-version '0.1.5'
+description 'Gradle plugin to build, test and do other stuff of Golang projects.'
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
@@ -49,7 +50,32 @@ pluginBundle {
             displayName = 'Golang Plugin'
         }
     }
+
+    mavenCoordinates {
+        groupId = project.group
+        artifactId = project.name
+        version = project.version
+    }
 }
+
+processResources {
+    filesMatching('**/version.properties') {
+        expand(
+                'version': "$project.version",
+                'group': "$project.group",
+                'description': "$project.description"
+        )
+    }
+}
+
+release {
+    preTagCommitMessage = 'Preapre release of '
+    tagCommitMessage = 'Release version '
+    newVersionCommitMessage = 'Prepare next development version '
+    tagTemplate = 'v${version}'
+}
+
+afterReleaseBuild.dependsOn publishPlugins
 
 tasks.withType(JavaCompile) {
     options.warnings = false
