@@ -53,9 +53,6 @@ plugins {
 
 ## Quick start
 
-> This example refers gradle >2.1. For detailed examples please refer our
-> [gradle plugin page](https://plugins.gradle.org/plugin/org.echocat.golang).
-
 1. Ensure that a working JDK is installed.
     type ``java -version`` on your shell. If the result is NOT a minimum of 7 please go to 
     [Oracle JDK download page](http://www.oracle.com/technetwork/java/javase/downloads/index.html) and download the
@@ -67,6 +64,7 @@ plugins {
       on your computer.
 
 3. Create ``build.gradle`` in root directory of your project with the following content:
+
     ```groovy
     plugins {
         id 'org.echocat.golang' version '<latest version of this plugin>'
