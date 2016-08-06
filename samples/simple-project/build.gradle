@@ -1,14 +1,16 @@
 import org.echocat.gradle.plugins.golang.tasks.GolangTask
 import org.echocat.gradle.plugins.golang.utils.Executor
+import org.slf4j.LoggerFactory
 
 apply plugin: 'org.echocat.golang'
 
 buildscript {
     repositories {
+        mavenCentral()
         mavenLocal()
     }
     dependencies {
-        classpath "org.echocat.gradle.plugins:gradle-golang-plugin:0.1.2"
+        classpath "org.echocat.gradle.plugins:gradle-golang-plugin:0.1.7-SNAPSHOT"
     }
 }
 
@@ -39,22 +41,24 @@ golang {
                 "main.groupId": group,
         ]
     }
-    /*testing {
+    testing {
         coverProfile = "${buildDir}/testing/${name}.cover"
         coverProfileHtml = "${buildDir}/testing/${name}.cover.html"
-    }*/
+    }
 }
 
-/*task moo(type: MooTask, dependsOn: test)
+task moo(type: MooTask, dependsOn: test)
 build.dependsOn moo
 
 class MooTask extends GolangTask {
 
+    private static final Logger LOG = LoggerFactory.getLogger(MooTask.class)
+
     @Override
     void run() throws Exception {
-        Executor.executor()
-        println(toolchain.goBinary)
+        Executor.executor(toolchain.goBinary, LOG)
+            .arguments("version")
+            .execute()
     }
 
 }
-*/

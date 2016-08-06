@@ -98,8 +98,7 @@ public class ToolchainSettings {
         }
         final String stdout;
         try {
-            stdout = executor()
-                .executable(goBinary)
+            stdout = executor(goBinary)
                 .argument("version")
                 .execute()
                 .getStdoutAsString()

@@ -109,8 +109,7 @@ public class PrepareToolchain extends GolangTask {
 
             createDirectoriesIfRequired(binDirectory);
 
-            executor()
-                .executable(goBinary)
+            executor(goBinary)
                 .arguments("build", "-o", toolBinary, sourceTempFile)
                 .removeEnv("GOPATH")
                 .env("GOROOT", toolchain.getGoroot())
@@ -135,8 +134,7 @@ public class PrepareToolchain extends GolangTask {
 
             LOGGER.info("Going to build go toolchain for {}...", platform);
 
-            executor()
-                .executable(makeScript)
+            executor(makeScript)
                 .arguments("--no-clean")
                 .workingDirectory(sourceDirectory)
                 .removeEnv("GOPATH")

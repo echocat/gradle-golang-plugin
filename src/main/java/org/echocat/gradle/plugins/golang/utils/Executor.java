@@ -34,35 +34,35 @@ public class Executor {
     private final List<Object> _arguments = new ArrayList<>();
     private final OutputStream _stdout;
     private final OutputStream _stderr;
+    private final Path _executable;
 
     private Path _workingDirectory;
-    private Path _executable;
     private final Set<String> _failKeywords = new HashSet<>();
 
     @Nonnull
-    public static Executor executor() {
-        return executor(null, null);
+    public static Executor executor(@Nonnull String executable) {
+        return executor(Paths.get(executable).toAbsolutePath());
     }
 
     @Nonnull
-    public static Executor redirectingExecutor() {
-        //noinspection UseOfSystemOutOrSystemErr
-        return executor(System.out, System.err);
+    public static Executor executor(@Nonnull Path executable) {
+        return executor(executable, null, null);
     }
 
     @Nonnull
-    public static Executor loggingExecutor(@Nonnull Logger logger) {
-        return executor(new LoggingOutputStream(logger, false), new LoggingOutputStream(logger, true));
+    public static Executor executor(@Nonnull Path executable, @Nonnull Logger logger) {
+        return executor(executable, new LoggingOutputStream(logger, false), new LoggingOutputStream(logger, true));
     }
 
     @Nonnull
-    public static Executor executor(@Nullable OutputStream stdout, @Nullable OutputStream stderr) {
-        return new Executor(stdout, stderr);
+    public static Executor executor(@Nonnull Path executable, @Nullable OutputStream stdout, @Nullable OutputStream stderr) {
+        return new Executor(executable, stdout, stderr);
     }
 
-    public Executor(@Nullable OutputStream stdout, @Nullable OutputStream stderr) {
+    public Executor(@Nonnull Path executable, @Nullable OutputStream stdout, @Nullable OutputStream stderr) {
         _stdout = stdout != null ? stdout : new ByteArrayOutputStream();
         _stderr = stderr != null ? stderr : _stdout;
+        _executable = executable;
     }
 
     @Nonnull
@@ -79,17 +79,6 @@ public class Executor {
             _environment.put(name, value.toString());
         }
         return this;
-    }
-
-    @Nonnull
-    public Executor executable(Path executable) {
-        _executable = executable;
-        return this;
-    }
-
-    @Nonnull
-    public Executor executable(String executable) {
-        return executable(Paths.get(executable));
     }
 
     @Nonnull
@@ -113,7 +102,7 @@ public class Executor {
     }
 
     @Nonnull
-    public Executor arguments(Collection<Object> arguments) {
+    public Executor arguments(Collection<?> arguments) {
         if (arguments != null) {
             _arguments.addAll(arguments);
         }
@@ -204,10 +193,6 @@ public class Executor {
 
     @Nonnull
     protected String[] commandLine() throws IOException {
-        final Path executable = _executable;
-        if (executable == null) {
-            throw new IOException("There was no executable provided.");
-        }
         final String[] result = new String[_arguments.size() + 1];
         int i = 0;
         result[i++] = _executable.toAbsolutePath().toString();

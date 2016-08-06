@@ -4,7 +4,6 @@ import org.apache.commons.io.IOUtils;
 import org.codehaus.plexus.util.DirectoryScanner;
 import org.echocat.gradle.plugins.golang.model.BuildSettings;
 import org.echocat.gradle.plugins.golang.model.GolangSettings;
-import org.echocat.gradle.plugins.golang.utils.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +17,7 @@ import static java.lang.Boolean.TRUE;
 import static java.nio.file.Files.*;
 import static org.echocat.gradle.plugins.golang.model.OperatingSystem.WINDOWS;
 import static org.echocat.gradle.plugins.golang.model.OperatingSystem.currentOperatingSystem;
+import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
 import static org.echocat.gradle.plugins.golang.utils.FileUtils.ensureParentOf;
 
 public class PrepareSources extends GolangTask {
@@ -91,11 +91,8 @@ public class PrepareSources extends GolangTask {
         if (currentOperatingSystem() != WINDOWS) {
             createSymbolicLink(link, target);
         } else {
-            final String comSpec = System.getenv("ComSpec");
-            Executor.executor()
-                .executable(Paths.get(comSpec).toAbsolutePath())
-                .argument("/C")
-                .arguments("mklink", "/D", "/J", link.toString(), target.toString())
+            executor(System.getenv("ComSpec"))
+                .arguments("/C", "mklink", "/D", "/J", link, target)
                 .execute();
         }
     }

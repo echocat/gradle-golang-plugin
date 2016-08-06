@@ -132,8 +132,7 @@ public class DependencyHandler {
     protected Set<GolangDependency> resolveDependenciesOf(@Nonnull GolangDependency dependency) throws Exception {
         final Set<GolangDependency> result = new TreeSet<>();
         for (final Path file : filesFor(dependency)) {
-            final String plainPackages = executor()
-                .executable(_settings.getToolchain().toolchainBinary("importsExtractor"))
+            final String plainPackages = executor(_settings.getToolchain().toolchainBinary("importsExtractor"))
                 .arguments(file)
                 .execute()
                 .getStdoutAsString();

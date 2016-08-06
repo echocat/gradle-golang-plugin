@@ -13,16 +13,17 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.*;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
 import static java.lang.Boolean.TRUE;
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.echocat.gradle.plugins.golang.model.GolangDependency.Type.source;
 import static org.echocat.gradle.plugins.golang.model.GolangDependency.newDependency;
+import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
 import static org.echocat.gradle.plugins.golang.utils.FileUtils.*;
 import static org.echocat.gradle.plugins.golang.utils.FileUtils.delete;
 
@@ -93,7 +94,7 @@ public class Test extends GolangTask {
         if (coverProfileHtml != null && coverProfile == null) {
             final Path testingDir = getProject().getBuildDir().toPath().resolve("testing");
             createDirectoriesIfRequired(testingDir);
-            coverProfile = createTempFile(testingDir, getProject().getName(), "cover");
+            coverProfile = createTempFile(testingDir, getProject().getName() + ".", ".cover");
         }
         return coverProfile;
     }
@@ -119,8 +120,7 @@ public class Test extends GolangTask {
 
         final Platform platform = settings.getHostPlatform();
 
-        final Executor executor = Executor.executor()
-            .executable(toolchain.getGoBinary())
+        final Executor executor = executor(toolchain.getGoBinary())
             .workingDirectory(build.getGopath())
             .env("GOPATH", build.getGopath())
             .env("GOROOT", toolchain.getGoroot())
@@ -128,26 +128,21 @@ public class Test extends GolangTask {
             .env("GOARCH", platform.getArchitecture().getNameInGo())
             .env("CGO_ENABLED", TRUE.equals(toolchain.getCgoEnabled()) ? "1" : "0");
 
-        executor.arguments("test");
-        for (final Map.Entry<String, String> argument : testing.additionalArgumentMap().entrySet()) {
-            executor.argument(argument.getKey());
-            if (argument.getValue() != null) {
-                executor.argument(argument.getValue());
-            }
-        }
+        executor.argument("test");
+        executor.arguments((Object[])testing.getArguments());
 
         final Path packageCoverProfile;
         if (coverProfile != null) {
             final Path testingDir = getProject().getBuildDir().toPath().resolve("testing");
             createDirectoriesIfRequired(testingDir);
-            packageCoverProfile = createTempFile(testingDir, getProject().getName(), "cover");
+            packageCoverProfile = createTempFile(testingDir, getProject().getName() + ".", ".cover");
             executor.arguments("-coverprofile", packageCoverProfile);
         } else {
             packageCoverProfile = null;
         }
 
         executor.argument(aPackage.getGroup());
-        executor.arguments((Object[])testing.getArguments());
+        executor.arguments((Object[])testing.getTestArguments());
 
         boolean success;
         try {
@@ -161,7 +156,8 @@ public class Test extends GolangTask {
             try (final InputStream is = newInputStream(packageCoverProfile)) {
                 try (final Reader reader = new InputStreamReader(is, "UTF-8")) {
                     try (final BufferedReader br = new BufferedReader(reader)) {
-                        try (final OutputStream os = newOutputStream(coverProfile, APPEND)) {
+                        ensureParentOf(coverProfile);
+                        try (final OutputStream os = newOutputStream(coverProfile, CREATE, APPEND)) {
                             try (final OutputStreamWriter writer = new OutputStreamWriter(os)) {
                                 final String firstLine = br.readLine();
                                 if (firstLine != null) {
@@ -189,8 +185,7 @@ public class Test extends GolangTask {
         final BuildSettings build = getBuild();
         final ToolchainSettings toolchain = getToolchain();
 
-        Executor.executor()
-            .executable(toolchain.getGoBinary())
+        executor(toolchain.getGoBinary())
             .workingDirectory(build.getGopath())
             .env("GOPATH", build.getGopath())
             .env("GOROOT", toolchain.getGoroot())

@@ -10,11 +10,11 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import java.nio.file.Path;
-import java.util.Map;
 
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.echocat.gradle.plugins.golang.model.GolangDependency.newDependency;
+import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
 
 public class Build extends GolangTask {
 
@@ -67,8 +67,7 @@ public class Build extends GolangTask {
         final Path outputFilename = build.outputFilenameFor(platform);
         LOGGER.debug("Building {}...", outputFilename);
 
-        final Executor executor = Executor.executor()
-            .executable(toolchain.getGoBinary())
+        final Executor executor = executor(toolchain.getGoBinary())
             .workingDirectory(build.getGopath())
             .env("GOPATH", build.getGopath())
             .env("GOROOT", toolchain.getGoroot())
@@ -77,19 +76,8 @@ public class Build extends GolangTask {
             .env("CGO_ENABLED", TRUE.equals(toolchain.getCgoEnabled()) ? "1" : "0");
 
         executor.arguments("build");
-        executor.arguments("-o", outputFilename.toString());
-        for (final Map.Entry<String, String> argument : build.additionalArgumentMap().entrySet()) {
-            executor.argument(argument.getKey());
-            if (argument.getValue() != null) {
-                executor.argument(argument.getValue());
-            }
-        }
-
-        final String ldFlags = build.ldflagsWithDefinitions();
-        if (isNotEmpty(ldFlags)) {
-            executor.arguments("-ldflags", ldFlags);
-        }
-
+        executor.arguments("-o", outputFilename);
+        executor.arguments(build.getResolvedArguments());
         executor.argument(targetPackage.getGroup());
 
         executor.execute(EXCEPTION_PRODUCER);
@@ -100,9 +88,6 @@ public class Build extends GolangTask {
                 LOGGER.info(line);
             }
         }
-
-        //projectHelper().attachArtifact(project(), platformExtensionFor(platform), platform.getNameInGo(), outputFilename);
-
         LOGGER.info("{} build.", outputFilename);
     }
 

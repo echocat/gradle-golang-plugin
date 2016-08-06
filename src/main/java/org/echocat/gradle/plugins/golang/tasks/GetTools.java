@@ -51,8 +51,7 @@ public class GetTools extends GolangTask {
         if (getResult == downloaded || !exists(targetBinaryFilename)) {
             delete(targetBinaryFilename.getParent());
 
-            executor()
-                .executable(toolchain.getGoBinary())
+            executor(toolchain.getGoBinary())
                 .workingDirectory(build.getGopath())
                 .env("GOPATH", build.getGopath())
                 .env("GOROOT", toolchain.getGoroot())
