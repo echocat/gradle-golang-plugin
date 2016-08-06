@@ -18,7 +18,7 @@ public class Validate extends GolangTask {
     private static final Logger LOGGER = LoggerFactory.getLogger(Validate.class);
 
     public Validate() {
-        setGroup("build");
+        setGroup("verification");
     }
 
     @Override

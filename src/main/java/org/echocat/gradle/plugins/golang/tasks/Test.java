@@ -43,7 +43,7 @@ public class Test extends GolangTask {
     }
 
     public Test() {
-        setGroup("build");
+        setGroup("verification");
         dependsOn(
             "validate",
             "prepare-toolchain",
