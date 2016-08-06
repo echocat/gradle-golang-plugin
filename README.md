@@ -2,11 +2,19 @@
 
 **This project is still under heavy development.**
 
-## Introduction
-
 The gradle-golang plugin is is designed to give you the power of a professional build tool (in this case Gradle) to
 build, test (and other great stuff) with your go code. And this without pain of think about the correct installation
 go sdk, set the right environment variables, download dependencies, ...
+
+## Topics
+
+* [Features](#features)
+* [Get it](#get-it)
+* [Quick start](#quick-start)
+* [Settings](#settings)
+* [Tasks](#tasks)
+* [Contributing](#contributing)
+* [License](#license)
 
 ## Features
 
@@ -31,16 +39,242 @@ go sdk, set the right environment variables, download dependencies, ...
 
 Find more plugins on [Gradle plugin repository](https://plugins.gradle.org/).
 
-## Usage
+## Get it
 
 > This example refers gradle >2.1. For detailed examples please refer our
 > [gradle plugin page](https://plugins.gradle.org/plugin/org.echocat.golang).
 
+Plugin dependency for your ``build.gradle``
 ```groovy
 plugins {
-    id "org.echocat.golang" version "<your desired version>"
+  id "org.echocat.golang" version "0.1.5"
 }
 ```
+
+## Quick start
+
+> This example refers gradle >2.1. For detailed examples please refer our
+> [gradle plugin page](https://plugins.gradle.org/plugin/org.echocat.golang).
+
+1. Ensure that a working JDK is installed.
+    type ``java -version`` on your shell. If the result is NOT a minimum of 7 please go to 
+    [Oracle JDK download page](http://www.oracle.com/technetwork/java/javase/downloads/index.html) and download the
+    latest version or use your favorite package manager to install it. 
+
+2. Download and extract [gradle-wrapper.zip](assets/gradle-wrapper.zip) in root directory of your project.
+    > To use the Gradle Wrapper is the recommend solution because there is not requirement of other tools. All is
+      shipped with the your project (excluding the JDK). Other way is install [Gradle](https://www.gradle.org/) direct 
+      on your computer.
+
+3. Create ``build.gradle`` in root directory of your project with the following content:
+    ```groovy
+    plugins {
+        id 'org.echocat.golang' version '<latest version of this plugin>'
+    }
+    
+    group 'github.com/my-user/my-project'
+    
+    dependencies {
+        build 'github.com/urfave/cli'
+        test 'github.com/stretchr/testify'
+    }
+    
+    golang {
+        // Set default platforms to build but make it overwritable via -Dplatforms=<..>
+        platforms = System.getProperty("platforms", "linux-amd64,windows-amd64,darwin-amd64")
+        build {
+            // Use temporary GOPATH to build everthing in
+            useTemporaryGopath = true
+        }
+    }
+    ```
+
+4. Now just run
+    ```bash
+    # On Linux and macOS
+    ./gradlew build
+    # On Windows
+    gradlew build
+    ```
+
+    Now your whole project will be build and the output binaries are located under ``build/out/``. In this example you 
+    can expect the binaries for ``linux-amd64``, ``windows-amd64`` and ``darwin-amd64``.
+
+## Settings
+
+```groovy
+// Package name of your project.
+// Example: github.com/my_user/my_project
+group = '' // String - REQUIRED (if golang.packageName is not set)
+
+dependencies {
+    // Dependency required for build and testing
+    build '<package name>[:<version>]'
+
+    // Dependency required only for testing
+    test '<package name>[:<version>]'
+
+    // Tool dependency required only while build process
+    tool '<package name>[:<version>]'
+}
+
+golang {
+    // Comma separated list of platforms to build
+    platforms = 'linux-386,linux-amd64,windows-386,windows-amd64,darwin-amd64' // String
+    // Overwrite the package name of 'group' - be useful for overriding settings for 
+    // specific tasks.
+    packageName = '<same as group>' // String
+    // Platform of the building host. Automatically set by 'validate' task
+    hostPlatform = '<automatically detected>' // Platform
+    // Location where to place the go toolchain and other assets temporarily
+    cacheRoot = '~/.go' // Path
+    
+    build {
+        // GOPATH to use for build.
+        // Will be replaced with a temporary one if useTemporaryGopath is set to true. 
+        gopath = '${GOPATH}' // Path
+
+        // If enabled a temporary GOPATH is created to build in. 
+        useTemporaryGopath = false // Boolean
+
+        // Is used to identify sources to be processed 
+        includes = [] // []String
+
+        // Is used to identify sources to be NOT processed 
+        excludes = ['.git/**', '.svn/**', 'build.gradle', 'build/**', '.gradle/**', 'gradle/**'] // []String
+
+        // Optional arguments to pass to go build tool 
+        arguments = [] // []String
+
+        // Name of the generated output filename.
+        // Placeholders:
+        // * %{platform} - Platform name like 'linux-amd64'
+        // * %{extension} - Platform specific executable extension like on Windows='.exe' or Linux=''  
+        // * %{separator} - Separator in paths like on Linux='/' or Windows='\'  
+        // * %{pathSeparator} - Separator to split paths like on Linux=':' or Windows=';'  
+        outputFilenamePattern = 'build/out/<project name>-%{platform}%{extension}' // String
+
+        // Definitions to pass to ld
+        definitions = [] // [String]String
+    }
+    
+    dependencies {
+        // If true it will always download every dependency also if there are no updates available.
+        forceUpdate = false // Boolean
+
+        // If true it will delete unknown dependencies on clean task.
+        deleteUnknownDependencies = true // Boolean
+
+        // If true it will delete all dependencies on clean task.
+        deleteAllCachedDependenciesOnClean = false // Boolean
+
+        // Directory where to cache all dependencies in.
+        dependencyCache = 'vendor' // Path
+    }
+
+    testing {
+        // If true no tests will be executed.
+        skip = false // Boolean
+
+        // Explicit packages to test
+        // If provided 'includes' and 'excludes' will be ignored.
+        packages = [] // []String
+
+        // Searches in this directories for test go sources to be tested.
+        includes = [] // []String
+
+        // Do not searches in this directories for test go sources to be tested.
+        excludes = [] // []String
+
+        // Optional arguments to pass to the go test tool
+        arguments = [] // []String
+
+        // Optional arguments to pass to the go test itself
+        testArguments = [] // []String
+    }
+    
+    toolchain {
+        // Always build toolchain also if already there and working
+        forceBuildToolchain = false // Boolean
+
+        // Used go version
+        goversion = 'go1.6.2' // String
+
+        // Used GOROOT. This will normally automated detected by validate task
+        goroot = '<automatically detected>' // Path
+
+        // Use cgo or not
+        cgoEnabled = false // Boolean
+
+        // Used GOROOT_BOOTSTRAP. This will normally automated detected by validate task
+        bootstrapGoroot = '<automatically detected>' // Path
+
+        // Location where to download bootstrap toolchain and target toolchain
+        downloadUriRoot = 'https://storage.googleapis.com/golang/' // URI
+    }
+}
+```
+
+## Tasks
+
+* [build](#build)
+* [clean](#clean)
+* [get-tools](#get-tools)
+* [prepare-sources](#prepare-sources)
+* [prepare-toolchain](#prepare-toolchain)
+* [test](#test)
+* [validate](#validate)
+
+Run tasks using...
+
+```bash
+# On Linux and macOS
+./gradlew <task> [...]
+# On Windows
+gradlew <task> [...]
+```
+
+### ``build``
+
+Build the source code of your project and create binaries for it under ``build/out/``.
+
+Depends on: ``validate``, ``prepare-toolchain``, ``prepare-sources``, ``test``, ``get-tools``
+
+### ``clean``
+
+Clean all generated artifacts by your build including not referenced dependencies. 
+
+Depends on: ``validate``
+
+### ``get-tools``
+
+Download and build required tools. 
+
+Depends on: ``validate``, ``prepare-toolchain``
+
+### ``prepare-sources``
+
+Process sources and copy it to location for building (if required). 
+
+Depends on: ``validate``
+
+### ``prepare-toolchain``
+
+Download go bootstrap toolchain (if not available on host) and build go toolchain for all target and host platforms. 
+
+Depends on: ``validate``
+
+### ``test``
+
+Executes all tests of the target package and depended source packages. Optionally create coverage profile in go format
+ and HTML. Test output will be located under  ``build/testing/``
+
+Depends on: ``validate``, ``prepare-toolchain``, ``prepare-sources``, ``get-tools``
+
+### ``validate``
+
+Detect parameters of the whole host system relative to the configuration and resolve missing parameters.
+ Every other tasks needs this task to work. 
 
 ## Contributing
 

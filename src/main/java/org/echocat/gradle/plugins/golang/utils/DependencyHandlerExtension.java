@@ -129,12 +129,9 @@ public class DependencyHandlerExtension {
         return VcsType.valueOf(plain.toString());
     }
 
-    @Nullable
+    @Nonnull
     protected UpdatePolicy updatePolicyArgument(@Nonnull Map<String, Object> arguments, @Nonnull String name) {
         final Object plain = arguments.get(name);
-        if (plain == null) {
-            return null;
-        }
         if (plain instanceof UpdatePolicy) {
             return (UpdatePolicy) plain;
         }
