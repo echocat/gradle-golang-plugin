@@ -4,9 +4,11 @@ import org.apache.commons.io.IOUtils;
 import org.echocat.gradle.plugins.golang.Version;
 import org.echocat.gradle.plugins.golang.model.*;
 import org.echocat.gradle.plugins.golang.utils.ArchiveUtils;
+import org.gradle.logging.ProgressLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,31 +26,34 @@ import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
 import static org.echocat.gradle.plugins.golang.utils.FileUtils.createDirectoriesIfRequired;
 import static org.echocat.gradle.plugins.golang.utils.FileUtils.deleteQuietly;
 
-public class PrepareToolchain extends GolangTask {
+public class PrepareToolchain extends GolangTaskSupport {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PrepareToolchain.class);
 
     public PrepareToolchain() {
         setGroup("build");
+        setDescription("Download and build toolchain if required.");
         dependsOn("validate");
     }
 
     @Override
     public void run() throws Exception {
-        downloadBootstrapIfRequired();
-        downloadSourcesIfRequired();
-        if (!buildHostIfRequired() && !buildTargetsIfRequired() && !buildToolsIfRequired()) {
+        final ProgressLogger progress = startProgress("Prepare toolchain");
+        downloadBootstrapIfRequired(progress);
+        downloadSourcesIfRequired(progress);
+        if (!buildHostIfRequired(progress) && !buildTargetsIfRequired(progress) && !buildToolsIfRequired(progress)) {
             getState().upToDate();
         }
+        progress.completed();
     }
 
-    protected boolean buildHostIfRequired() throws Exception {
+    protected boolean buildHostIfRequired(@Nonnull ProgressLogger progress) throws Exception {
         final ToolchainSettings toolchain = getToolchain();
         final String expectedVersion = toolchain.getGoversion();
         String version = goBinaryVersion();
         boolean build = false;
         if (version == null) {
-            build(Platform.currentPlatform(), true);
+            build(Platform.currentPlatform(), true, progress);
             version = goBinaryVersion();
             build = true;
         }
@@ -58,7 +63,7 @@ public class PrepareToolchain extends GolangTask {
         return build;
     }
 
-    protected boolean buildTargetsIfRequired() throws Exception {
+    protected boolean buildTargetsIfRequired(@Nonnull ProgressLogger progress) throws Exception {
         final GolangSettings settings = getGolang();
         final ToolchainSettings toolchain = getToolchain();
         final List<Platform> platforms = settings.getParsedPlatforms();
@@ -67,18 +72,18 @@ public class PrepareToolchain extends GolangTask {
         }
         boolean atLeastOneBuild = false;
         for (final Platform platform : platforms) {
-            if (build(platform, TRUE.equals(toolchain.getForceBuildToolchain()))) {
+            if (build(platform, TRUE.equals(toolchain.getForceBuildToolchain()), progress)) {
                 atLeastOneBuild = true;
             }
         }
         return atLeastOneBuild;
     }
 
-    protected boolean buildToolsIfRequired() throws Exception {
-        return buildToolIfRequired("importsExtractor");
+    protected boolean buildToolsIfRequired(@Nonnull ProgressLogger progress) throws Exception {
+        return buildToolIfRequired("importsExtractor", progress);
     }
 
-    protected boolean buildToolIfRequired(String name) throws Exception {
+    protected boolean buildToolIfRequired(@Nonnull String name, @Nonnull ProgressLogger progress) throws Exception {
         final ToolchainSettings toolchain = getToolchain();
         final Path goBinary = toolchain.getGoBinary();
         final Path binDirectory = goBinary.getParent();
@@ -92,6 +97,8 @@ public class PrepareToolchain extends GolangTask {
             }
         }
 
+        progress.progress("Building tool " + name + "...");
+        LOGGER.info("Going to build tool {}...", name);
         final Path sourceTempFile = createTempFile(name, ".go");
         try {
             final InputStream is = getClass().getClassLoader().getResourceAsStream("org/echocat/gradle/plugins/golang/utils/" + name + ".go");
@@ -120,10 +127,12 @@ public class PrepareToolchain extends GolangTask {
         }
 
         write(toolBinaryInfo, info.getBytes("UTF-8"));
+        //noinspection UseOfSystemOutOrSystemErr
+        System.out.println("Tool " + name + " build.");
         return true;
     }
 
-    protected boolean build(Platform platform, boolean force) throws Exception {
+    protected boolean build(Platform platform, boolean force, @Nonnull ProgressLogger progress) throws Exception {
         final ToolchainSettings toolchain = getToolchain();
         final String goos = platform.getOperatingSystem().getNameInGo();
         final String goarch = platform.getArchitecture().getNameInGo();
@@ -132,6 +141,7 @@ public class PrepareToolchain extends GolangTask {
             final Path sourceDirectory = toolchain.getGorootSourceRoot();
             final Path makeScript = sourceDirectory.resolve("make." + (OperatingSystem.currentOperatingSystem() == OperatingSystem.WINDOWS ? "bat" : "bash"));
 
+            progress.progress("Building go toolchain for " + platform + "...");
             LOGGER.info("Going to build go toolchain for {}...", platform);
 
             executor(makeScript)
@@ -147,13 +157,14 @@ public class PrepareToolchain extends GolangTask {
                 .execute();
 
             write(buildMarker, new byte[0]);
-            LOGGER.info("Going to build go toolchain for {}... DONE!", platform);
+            //noinspection UseOfSystemOutOrSystemErr
+            System.out.println("Go toolchain for " + platform + " build.");
             return true;
         }
         return false;
     }
 
-    protected void downloadSourcesIfRequired() {
+    protected void downloadSourcesIfRequired(@Nonnull ProgressLogger progress) {
         final ToolchainSettings toolchain = getToolchain();
         final Path goroot = toolchain.getGoroot();
         final String expectedVersion = toolchain.getGoversion();
@@ -165,6 +176,7 @@ public class PrepareToolchain extends GolangTask {
         }
 
         final URI downloadUri = downloadUri();
+        progress.progress("Download go toolchain...");
         LOGGER.info("There was no go SDK sources of version {} found. Going to download it from {} to {} ...", expectedVersion, downloadUri, goroot);
         try {
             ArchiveUtils.download(downloadUri, goroot);
@@ -178,7 +190,8 @@ public class PrepareToolchain extends GolangTask {
         if (!Objects.equals(version, expectedVersion)) {
             throw new IllegalStateException("Downloaded sources to " + goroot + " and expected sources of version " + expectedVersion + " but it is " + version + ".");
         }
-        LOGGER.info("Go sources (version {}) successfully downloaded to {}.", version, goroot);
+        //noinspection UseOfSystemOutOrSystemErr
+        System.out.println("Go toolchain sources (" + version + ") successfully downloaded to \"" + goroot + "\".");
     }
 
     protected String readGoVersionFrom(Path goroot) {
@@ -203,7 +216,7 @@ public class PrepareToolchain extends GolangTask {
         return create(toolchain.getDownloadUriRoot() + toolchain.getGoversion() + ".src.tar.gz");
     }
 
-    protected void downloadBootstrapIfRequired() {
+    protected void downloadBootstrapIfRequired(@Nonnull ProgressLogger progress) {
         final ToolchainSettings toolchain = getToolchain();
         String version = bootstrapGoBinaryVersion();
         if (version != null) {
@@ -213,6 +226,7 @@ public class PrepareToolchain extends GolangTask {
 
         final URI downloadUri = downloadUriForBootstrap();
         final Path bootstrapGoroot = toolchain.getBootstrapGoroot();
+        progress.progress("Download bootstrap go toolchain...");
         LOGGER.info("There was no go bootstrap found. Going to download it from {} to {} ...", downloadUri, bootstrapGoroot);
         try {
             ArchiveUtils.download(downloadUri, bootstrapGoroot);
@@ -226,7 +240,8 @@ public class PrepareToolchain extends GolangTask {
         if (!Objects.equals(version, toolchain.getGoversion())) {
             throw new IllegalStateException("Downloaded and extracted bootstrap to " + bootstrapGoroot + " and expected an installation in version " + toolchain.getGoversion() + " but it is " + version + ".");
         }
-        LOGGER.info("Go bootstrap (version {}) successfully installed to {}.", version, bootstrapGoroot);
+        //noinspection UseOfSystemOutOrSystemErr
+        System.out.println("Go bootstrap toolchain (" + version + ") successfully installed to \"" + bootstrapGoroot + "\".");
     }
 
     protected String bootstrapGoBinaryVersion() {

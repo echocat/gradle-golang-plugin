@@ -180,7 +180,7 @@ public class GolangDependency implements Dependency, Comparable<GolangDependency
         final UpdatePolicy updatePolicy = getUpdatePolicy();
         final GolangDependency parent = getParent();
         final Path location = getLocation();
-        if (!isEmpty(version) || repositoryUri != null || repositoryType != null || !defaultUpdatePolicy().equals(updatePolicy)) {
+        if (!isEmpty(version) || repositoryUri != null || repositoryType != null || !defaultUpdatePolicy().equals(updatePolicy) || parent != null) {
             sb.append(" (");
             boolean first = true;
             if (!isEmpty(version)) {
@@ -207,6 +207,12 @@ public class GolangDependency implements Dependency, Comparable<GolangDependency
                 }
                 sb.append("updatePolicy=").append(updatePolicy);
             }
+            if (parent != null) {
+                if (!first) {
+                    sb.append(", ");
+                }
+                sb.append("parent=").append(parent.getGroup());
+            }
             sb.append(')');
         }
         return sb.toString();
@@ -220,15 +226,14 @@ public class GolangDependency implements Dependency, Comparable<GolangDependency
         return Objects.equals(getGroup(), that.getGroup()) &&
             Objects.equals(getVersion(), that.getVersion()) &&
             Objects.equals(getRepositoryUri(), that.getRepositoryUri()) &&
-            getRepositoryType() == that.getRepositoryType() &&
-            Objects.equals(getUpdatePolicy(), that.getUpdatePolicy()) &&
-            Objects.equals(getLocation(), that.getLocation())
+            Objects.equals(getRepositoryType(), that.getRepositoryType()) &&
+            Objects.equals(getUpdatePolicy(), that.getUpdatePolicy()) // TODO! Parent?
             ;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getGroup(), getVersion(), getRepositoryUri(), getRepositoryType(), getUpdatePolicy(), getParent());
+        return Objects.hash(getGroup(), getVersion(), getRepositoryUri(), getRepositoryType(), getUpdatePolicy()); // TODO! Parent?
     }
 
     @Override

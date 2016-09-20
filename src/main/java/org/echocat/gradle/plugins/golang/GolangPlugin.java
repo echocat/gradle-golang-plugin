@@ -54,12 +54,18 @@ public class GolangPlugin implements Plugin<Project> {
 
         final TaskContainer tasks = project.getTasks();
         tasks.replace("clean", Clean.class);
+        tasks.replace("baseClean", BaseClean.class);
         tasks.replace("validate", Validate.class);
-        tasks.replace("prepare-toolchain", PrepareToolchain.class);
-        tasks.replace("prepare-sources", PrepareSources.class);
-        tasks.replace("get-tools", GetTools.class);
+        tasks.replace("baseValidate", BaseValidate.class);
+        tasks.replace("prepareToolchain", PrepareToolchain.class);
+        tasks.replace("prepareSources", PrepareSources.class);
+        tasks.replace("basePrepareSources", BasePrepareSources.class);
+        tasks.replace("getTools", GetTools.class);
+        tasks.replace("baseGetTools", BaseGetTools.class);
         tasks.replace("test", Test.class);
+        tasks.replace("baseTest", BaseTest.class);
         tasks.replace("build", Build.class);
+        tasks.replace("baseBuild", BaseBuild.class);
 
     }
 

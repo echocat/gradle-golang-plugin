@@ -217,9 +217,9 @@ golang {
 
 * [build](#build)
 * [clean](#clean)
-* [get-tools](#get-tools)
-* [prepare-sources](#prepare-sources)
-* [prepare-toolchain](#prepare-toolchain)
+* [getTools](#getTools)
+* [prepareSources](#prepareSources)
+* [prepareToolchain](#prepareToolchain)
 * [test](#test)
 * [validate](#validate)
 
@@ -236,7 +236,7 @@ gradlew <task> [...]
 
 Build the source code of your project and create binaries for it under ``build/out/``.
 
-Depends on: ``validate``, ``prepare-toolchain``, ``prepare-sources``, ``test``, ``get-tools``
+Depends on: ``validate``, ``prepareToolchain``, ``prepareSources``, ``test``, ``getTools``
 
 ### ``clean``
 
@@ -244,19 +244,19 @@ Clean all generated artifacts by your build including not referenced dependencie
 
 Depends on: ``validate``
 
-### ``get-tools``
+### ``getTools``
 
 Download and build required tools. 
 
-Depends on: ``validate``, ``prepare-toolchain``
+Depends on: ``validate``, ``prepareToolchain``
 
-### ``prepare-sources``
+### ``prepareSources``
 
 Process sources and copy it to location for building (if required). 
 
 Depends on: ``validate``
 
-### ``prepare-toolchain``
+### ``prepareToolchain``
 
 Download go bootstrap toolchain (if not available on host) and build go toolchain for all target and host platforms. 
 
@@ -267,7 +267,7 @@ Depends on: ``validate``
 Executes all tests of the target package and depended source packages. Optionally create coverage profile in go format
  and HTML. Test output will be located under  ``build/testing/``
 
-Depends on: ``validate``, ``prepare-toolchain``, ``prepare-sources``, ``get-tools``
+Depends on: ``validate``, ``prepareToolchain``, ``prepareSources``, ``getTools``
 
 ### ``validate``
 

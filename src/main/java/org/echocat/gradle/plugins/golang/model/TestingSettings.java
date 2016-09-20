@@ -12,7 +12,7 @@ public class TestingSettings {
     @Nonnull
     private final Project _project;
 
-    private boolean _skip;
+    private Boolean _skip;
 
     private String[] _packages;
     private String[] _includes;
@@ -44,11 +44,11 @@ public class TestingSettings {
         }
     }
 
-    public boolean isSkip() {
+    public Boolean getSkip() {
         return _skip;
     }
 
-    public void setSkip(boolean skip) {
+    public void setSkip(Boolean skip) {
         _skip = skip;
     }
 

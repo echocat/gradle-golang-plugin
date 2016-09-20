@@ -38,6 +38,19 @@ public class GolangSettings {
         _platforms = platforms;
     }
 
+    public void setPlatforms(Platform... platforms) {
+        final StringBuilder sb = new StringBuilder();
+        if (platforms != null) {
+            for (final Platform platform : platforms) {
+                if (sb.length() > 0) {
+                    sb.append(',');
+                }
+                sb.append(platform.getNameInGo());
+            }
+        }
+        setPlatforms(sb.toString());
+    }
+
     public String getPackageName() {
         return _packageName;
     }

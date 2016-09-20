@@ -7,10 +7,7 @@ import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 import static java.io.File.pathSeparator;
@@ -140,10 +137,15 @@ public class BuildSettings {
 
     @Nonnull
     public String platformExtensionFor(@Nonnull Platform platform) {
-        if (platform.getOperatingSystem() == OperatingSystem.WINDOWS) {
+        if (Objects.equals(platform.getOperatingSystem(), OperatingSystem.WINDOWS)) {
             return ".exe";
         }
         return "";
+    }
+
+    @Nonnull
+    public String getCurrentPlatformExtension() {
+        return platformExtensionFor(Platform.currentPlatform());
     }
 
     @Nonnull
