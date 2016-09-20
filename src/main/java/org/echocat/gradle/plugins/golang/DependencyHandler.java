@@ -6,6 +6,7 @@ import org.echocat.gradle.plugins.golang.model.GolangDependency;
 import org.echocat.gradle.plugins.golang.model.Settings;
 import org.echocat.gradle.plugins.golang.utils.FileUtils;
 import org.echocat.gradle.plugins.golang.vcs.*;
+import org.echocat.gradle.plugins.golang.vcs.VcsRepository.Utils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
@@ -41,6 +42,7 @@ import static org.echocat.gradle.plugins.golang.DependencyHandler.GetResult.down
 import static org.echocat.gradle.plugins.golang.model.GolangDependency.Type.*;
 import static org.echocat.gradle.plugins.golang.model.GolangDependency.newDependency;
 import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
+import static org.echocat.gradle.plugins.golang.vcs.VcsRepository.Utils.progressMonitorFor;
 
 public class DependencyHandler {
 
@@ -105,12 +107,16 @@ public class DependencyHandler {
                         LOGGER.info("Update dependency {} (if required)...", normalizedReferenceId);
                         progressLogger.progress("Update dependency " + normalizedReferenceId + " (if required)...");
                         if (TRUE.equals(dependencies.getForceUpdate())) {
-                            repository.forceUpdate(selectTargetDirectoryFor(configuration));
+                            repository.forceUpdate(selectTargetDirectoryFor(configuration),
+                                progressMonitorFor("Updating dependency " + normalizedReferenceId + "... {0,number,0.0%}", progressLogger)
+                            );
                             //noinspection UseOfSystemOutOrSystemErr
                             System.out.println("Dependency " + normalizedReferenceId + " updated.");
                             progressLogger.progress("Dependency " + normalizedReferenceId + " updated.");
                         } else {
-                            final VcsFullReference fullReference = repository.updateIfRequired(selectTargetDirectoryFor(configuration));
+                            final VcsFullReference fullReference = repository.updateIfRequired(selectTargetDirectoryFor(configuration),
+                                progressMonitorFor("Updating dependency " + normalizedReferenceId + "... {0,number,0.0%}", progressLogger)
+                            );
                             if (fullReference != null) {
                                 //noinspection UseOfSystemOutOrSystemErr
                                 System.out.println("Dependency " + normalizedReferenceId + " updated.");

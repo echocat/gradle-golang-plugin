@@ -16,6 +16,8 @@ import static org.echocat.gradle.plugins.golang.model.Platform.currentPlatform;
 
 public class BaseValidate extends GolangTaskSupport {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseValidate.class);
+
     public BaseValidate() {
         setGroup("verification");
         setDescription("Validate the whole Golang setup and the project and resolve missing properties (if required) for base artifacts.");
@@ -56,12 +58,13 @@ public class BaseValidate extends GolangTaskSupport {
 
         progress.completed();
 
-        System.out.println("Package:    " + golang.getPackageName());
-        System.out.println("Platforms:  " + join(platforms, ", "));
-        System.out.println("Host:       " + hostPlatform);
-        System.out.println("Go version: " + toolchain.getGoversion());
-        System.out.println("GOROOT:     " + toolchain.getGoroot() + " (GOROOT_BOOTSTRAP: " + toolchain.getBootstrapGoroot() + ")");
-        System.out.println("GOPATH:     " + build.getGopath());
+        LOGGER.info("Package:          {}", golang.getPackageName());
+        LOGGER.info("Platforms:        {}", join(platforms, ", "));
+        LOGGER.info("Host:             {}", hostPlatform);
+        LOGGER.info("Go version:       {}", toolchain.getGoversion());
+        LOGGER.info("GOROOT:           {}", toolchain.getGoroot());
+        LOGGER.info("GOROOT_BOOTSTRAP: {}", toolchain.getBootstrapGoroot());
+        LOGGER.info("GOPATH:           {}", build.getGopath());
     }
 
     protected void configureGorootIfNeeded() {

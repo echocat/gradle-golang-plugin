@@ -38,28 +38,40 @@ public abstract class VcsRepositorySupport implements VcsRepository {
         return _reference;
     }
 
+    @Nullable
+    @Override
+    public VcsFullReference updateIfRequired(@Nonnull Path baseDirectory) throws VcsException {
+        return updateIfRequired(baseDirectory, null);
+    }
+
     @Override
     @Nullable
-    public VcsFullReference updateIfRequired(@Nonnull Path baseDirectory) throws VcsException {
+    public VcsFullReference updateIfRequired(@Nonnull Path baseDirectory, @Nullable ProgressMonitor progressMonitor) throws VcsException {
         final Path targetDirectory = resolveTargetDirectoryFor(baseDirectory);
         if (!isUpdateRequired(targetDirectory)) {
             return null;
         }
-        return forceUpdate(baseDirectory);
+        return forceUpdate(baseDirectory, progressMonitor);
     }
 
     @Nonnull
     @Override
     public VcsFullReference forceUpdate(@Nonnull Path baseDirectory) throws VcsException {
+        return forceUpdate(baseDirectory, null);
+    }
+
+    @Nonnull
+    @Override
+    public VcsFullReference forceUpdate(@Nonnull Path baseDirectory, @Nullable ProgressMonitor progressMonitor) throws VcsException {
         final Path targetDirectory = resolveTargetDirectoryFor(baseDirectory);
         emptyDirectoryIfExists(targetDirectory);
-        final VcsFullReference result = downloadToInternal(targetDirectory);
+        final VcsFullReference result = downloadToInternal(targetDirectory, progressMonitor);
         saveInfoFile(targetDirectory, result);
         return result;
     }
 
     @Nonnull
-    protected abstract VcsFullReference downloadToInternal(@Nonnull Path targetDirectory) throws VcsException;
+    protected abstract VcsFullReference downloadToInternal(@Nonnull Path targetDirectory, @Nullable ProgressMonitor progressMonitor) throws VcsException;
 
     @Nonnull
     protected Path resolveTargetDirectoryFor(@Nonnull Path baseDirectory) throws VcsException {

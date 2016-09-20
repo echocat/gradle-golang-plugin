@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
 
-import static org.echocat.gradle.plugins.golang.utils.FileUtils.delete;
 import static org.echocat.gradle.plugins.golang.utils.FileUtils.deleteQuietly;
 import static org.echocat.gradle.plugins.golang.vcs.git.GitVcsUri.gitVcsUriFor;
 
@@ -46,7 +45,7 @@ public class GitVcsRepository extends VcsRepositorySupport {
 
     @Override
     @Nonnull
-    public VcsFullReference downloadToInternal(@Nonnull Path targetDirectory) throws VcsException {
+    protected VcsFullReference downloadToInternal(@Nonnull Path targetDirectory, @Nullable ProgressMonitor progressMonitor) throws VcsException {
         Ref ref = null;
         final GitVcsUri uri = gitVcsUriFor(getReference());
         final Git git;
@@ -58,6 +57,7 @@ public class GitVcsRepository extends VcsRepositorySupport {
             final String refName = ref.getName();
             LOGGER.debug("Clone remote refs from {}@{} to {}...", uri, refName, targetDirectory);
             git = Git.cloneRepository()
+                .setProgressMonitor(toGitProgressMonitor(progressMonitor))
                 .setURI(uri.getUri().toString())
                 .setDirectory(targetDirectory.toFile())
                 .setBranch(refName)
@@ -69,6 +69,57 @@ public class GitVcsRepository extends VcsRepositorySupport {
         final String fullRevision = fullRevisionOf(git);
         removeGitDirectoryIfNeeded(targetDirectory, git);
         return new VcsFullReference(getReference(), fullRevision);
+    }
+
+    @Nonnull
+    protected org.eclipse.jgit.lib.ProgressMonitor toGitProgressMonitor(@Nullable final ProgressMonitor input) {
+        return new org.eclipse.jgit.lib.ProgressMonitor() {
+
+            private int _numberOfTasks;
+            private int _currentTask;
+            private double _progressPartOfATask;
+
+            private double _totalWorkOfCurrentTask;
+            private double _doneWorkOfCurrentTask;
+
+            @Override
+            public void start(int numberOfTasks) {
+                _numberOfTasks = numberOfTasks;
+                _progressPartOfATask = 1d / ((double) numberOfTasks);
+                if (input != null) {
+                    input.started();
+                }
+            }
+
+            @Override
+            public void beginTask(String title, int totalWork) {
+                _totalWorkOfCurrentTask = totalWork;
+                _doneWorkOfCurrentTask = 0;
+            }
+
+            @Override
+            public void update(int doneWorkOfCurrentTask) {
+                _doneWorkOfCurrentTask += doneWorkOfCurrentTask;
+                final double progressOfCurrentTask = _doneWorkOfCurrentTask / _totalWorkOfCurrentTask;
+                final double totalProgress = (_progressPartOfATask * ((double) _currentTask)) + (_progressPartOfATask * progressOfCurrentTask);
+                if (input != null) {
+                    input.update(totalProgress);
+                }
+            }
+
+            @Override
+            public void endTask() {
+                _currentTask++;
+                if (_currentTask >= _numberOfTasks && input != null) {
+                    input.finished();
+                }
+            }
+
+            @Override
+            public boolean isCancelled() {
+                return false;
+            }
+        };
     }
 
     protected void removeGitDirectoryIfNeeded(@Nonnull Path targetDirectory, @Nonnull Git git) throws VcsException {
