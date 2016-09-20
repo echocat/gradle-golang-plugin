@@ -50,6 +50,11 @@ public class Executor {
     }
 
     @Nonnull
+    public static Executor executor(@Nonnull String executable, @Nonnull Logger logger) {
+        return executor(Paths.get(executable).toAbsolutePath(), logger);
+    }
+
+    @Nonnull
     public static Executor executor(@Nonnull Path executable, @Nonnull Logger logger) {
         return executor(executable, new LoggingOutputStream(logger, false), new LoggingOutputStream(logger, true));
     }

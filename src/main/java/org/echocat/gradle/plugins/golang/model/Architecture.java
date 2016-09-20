@@ -1,9 +1,13 @@
 package org.echocat.gradle.plugins.golang.model;
 
+import javax.annotation.Nonnull;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 public enum Architecture {
     X86("386", "x86"),
-    X86_64("amd64", "x86_64"),
-    AMD64("amd64", "amd64"),
+    AMD64("amd64", "amd64", "x86_64"),
     ARM("arm", "arm"),
     PPC64("ppc64", null),
     PPC64LE("ppc64le", null),
@@ -13,19 +17,31 @@ public enum Architecture {
     private static final Architecture CURRENT = resolveForJava(System.getProperty("os.arch", "unknown"));
 
     private final String _nameInGo;
-    private final String _nameInJava;
+    private final Set<String> _namesInJava;
 
-    Architecture(String nameInGo, String nameInJava) {
+    Architecture(String nameInGo, String nameInJava, String... otherNamesInJava) {
         _nameInGo = nameInGo;
-        _nameInJava = nameInJava;
+        final Set<String> namesInJava = new LinkedHashSet<>();
+        namesInJava.add(nameInJava);
+        if (otherNamesInJava != null) {
+            Collections.addAll(namesInJava, otherNamesInJava);
+        }
+        _namesInJava = Collections.unmodifiableSet(namesInJava);
     }
 
+    @Nonnull
     public String getNameInGo() {
         return _nameInGo;
     }
 
+    @Nonnull
     public String getNameInJava() {
-        return _nameInJava;
+        return _namesInJava.iterator().next();
+    }
+
+    @Nonnull
+    public Set<String> getNamesInJava() {
+        return _namesInJava;
     }
 
     @Override
@@ -47,8 +63,10 @@ public enum Architecture {
     public static Architecture resolveForJava(String javaArchName) throws IllegalArgumentException {
         if (javaArchName != null) {
             for (final Architecture candidate : values()) {
-                if (candidate._nameInJava != null && candidate._nameInJava.equalsIgnoreCase(javaArchName)) {
-                    return candidate;
+                for (final String nameInJava : candidate._namesInJava) {
+                    if (nameInJava.equalsIgnoreCase(javaArchName)) {
+                        return candidate;
+                    }
                 }
             }
         }

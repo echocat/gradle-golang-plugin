@@ -10,6 +10,9 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.internal.service.ServiceRegistry;
+import org.gradle.logging.ProgressLogger;
+import org.gradle.logging.ProgressLoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,9 +58,16 @@ public class DependencyHandler {
     private final VcsRepositoryProvider _vcsRepositoryProvider = new CombinedVcsRepositoryProvider();
 
     @Nonnull
+    private final ProgressLoggerFactory _progressLoggerFactory;
+    @Nonnull
     private final Settings _settings;
 
-    public DependencyHandler(@Nonnull Settings settings) {
+    public DependencyHandler(@Nonnull ServiceRegistry serviceRegistry, @Nonnull Settings settings) {
+        this(serviceRegistry.get(ProgressLoggerFactory.class), settings);
+    }
+
+    public DependencyHandler(@Nonnull ProgressLoggerFactory progressLoggerFactory, @Nonnull Settings settings) {
+        _progressLoggerFactory = progressLoggerFactory;
         _settings = settings;
     }
 
@@ -68,49 +78,85 @@ public class DependencyHandler {
 
     @Nonnull
     public Map<GolangDependency, GetResult> get(@Nullable String configuration, @Nullable Collection<GolangDependency> optionalRequiredPackages) throws Exception {
+        final ProgressLogger progressLogger = _progressLoggerFactory.newOperation(DependencyHandler.class);
+
         final DependenciesSettings dependencies = _settings.getDependencies();
         final Map<GolangDependency, GetResult> result = new TreeMap<>();
+        final Set<String> handledReferenceIds = new LinkedHashSet<>();
         final Queue<GolangDependency> toHandle = new LinkedList<>();
-        toHandle.addAll(dependencies(configuration));
         if (optionalRequiredPackages != null) {
             toHandle.addAll(optionalRequiredPackages);
         }
+        toHandle.addAll(dependencies(configuration));
 
+        progressLogger.setDescription("Checking " + configuration + " dependencies...");
+        progressLogger.started();
         GolangDependency dependency;
         while ((dependency = toHandle.poll()) != null) {
             if (!result.containsKey(dependency)) {
-                if (dependency.getType() != source) {
-                    final RawVcsReference reference = dependency.toRawVcsReference();
-                    final VcsRepository repository = _vcsRepositoryProvider.tryProvideFor(reference);
-                    if (repository == null) {
-                        throw new RuntimeException("Could not download dependency: " + reference);
-                    }
-                    LOGGER.debug("Update dependency {} (if required)...", reference);
-                    if (TRUE.equals(dependencies.getForceUpdate())) {
-                        repository.forceUpdate(selectTargetDirectoryFor(configuration));
-                        LOGGER.info("Dependency {} updated.", reference);
-                    } else {
-                        final VcsFullReference fullReference = repository.updateIfRequired(selectTargetDirectoryFor(configuration));
-                        if (fullReference != null) {
-                            LOGGER.info("Dependency {} updated.", reference);
-                            result.put(dependency, downloaded);
+                final RawVcsReference reference = dependency.toRawVcsReference();
+                final VcsRepository repository = _vcsRepositoryProvider.tryProvideFor(reference);
+                if (repository == null) {
+                    throw new RuntimeException("Could not download dependency: " + reference);
+                }
+                final String normalizedReferenceId = repository.getReference().getId();
+                if (!handledReferenceIds.contains(normalizedReferenceId)) {
+                    if (dependency.getType() != source) {
+                        LOGGER.info("Update dependency {} (if required)...", normalizedReferenceId);
+                        progressLogger.progress("Update dependency " + normalizedReferenceId + " (if required)...");
+                        if (TRUE.equals(dependencies.getForceUpdate())) {
+                            repository.forceUpdate(selectTargetDirectoryFor(configuration));
+                            //noinspection UseOfSystemOutOrSystemErr
+                            System.out.println("Dependency " + normalizedReferenceId + " updated.");
+                            progressLogger.progress("Dependency " + normalizedReferenceId + " updated.");
                         } else {
-                            LOGGER.debug("No update required for dependency {}.", reference);
-                            result.put(dependency, alreadyExists);
+                            final VcsFullReference fullReference = repository.updateIfRequired(selectTargetDirectoryFor(configuration));
+                            if (fullReference != null) {
+                                //noinspection UseOfSystemOutOrSystemErr
+                                System.out.println("Dependency " + normalizedReferenceId + " updated.");
+                                progressLogger.progress("Dependency " + normalizedReferenceId + " updated.");
+                                result.put(dependency, downloaded);
+                            } else {
+                                LOGGER.debug("No update for {} required.", normalizedReferenceId);
+                                progressLogger.progress("No update for " + normalizedReferenceId + " required.");
+                                result.put(dependency, alreadyExists);
+                            }
                         }
+                    } else {
+                        result.put(dependency, alreadyExists);
                     }
+                    handledReferenceIds.add(normalizedReferenceId);
                 } else {
                     result.put(dependency, alreadyExists);
                 }
-                toHandle.addAll(resolveDependenciesOf(dependency));
+                LOGGER.debug("Resolve child dependencies of dependency {}...", normalizedReferenceId);
+                progressLogger.progress("Resolve child dependencies of dependency " + normalizedReferenceId + "...");
+                for (final GolangDependency nextCandidate : resolveDependenciesOf(dependency)) {
+                    if (!result.containsKey(nextCandidate) && !toHandle.contains(nextCandidate)) {
+                        toHandle.add(nextCandidate);
+                    }
+                }
             }
         }
-        if (LOGGER.isInfoEnabled() && !result.isEmpty()) {
-            final StringBuilder sb = new StringBuilder(capitalize(configuration) + " dependencies:");
-            for (final GolangDependency handledDependecy : result.keySet()) {
-                sb.append("\n\t* ").append(handledDependecy);
+        int numberOfDownloadedDependencies = 0;
+        for (final GetResult getResult : result.values()) {
+            if (getResult == downloaded) {
+                numberOfDownloadedDependencies++;
             }
-            LOGGER.info(sb.toString());
+        }
+        if (numberOfDownloadedDependencies > 0) {
+            LOGGER.info("{} dependencies updated.", numberOfDownloadedDependencies);
+            progressLogger.completed(numberOfDownloadedDependencies + " dependencies updated.");
+        } else {
+            progressLogger.completed();
+        }
+
+        if (LOGGER.isDebugEnabled() && !handledReferenceIds.isEmpty()) {
+            final StringBuilder sb = new StringBuilder(capitalize(configuration) + " dependencies:");
+            for (final String id : handledReferenceIds) {
+                sb.append("\n\t* ").append(id);
+            }
+            LOGGER.debug(sb.toString());
         }
         return result;
     }
@@ -254,20 +300,30 @@ public class DependencyHandler {
 
     @Nonnull
     public Collection<Path> deleteUnknownDependenciesIfRequired() throws Exception {
+        final ProgressLogger progress = _progressLoggerFactory.newOperation(DependencyHandler.class);
+        progress.setDescription("Delete unknown dependencies");
+        progress.started("Delete unknown dependencies if required...");
         final DependenciesSettings dependencies = _settings.getDependencies();
         final Path dependencyCacheDirectory = dependencies.getDependencyCache();
         final Set<String> knownDependencyIds = new HashSet<>();
         for (final GolangDependency dependency : dependencies(null)) {
             knownDependencyIds.add(dependency.getGroup());
         }
-        return doDeleteUnknownDependenciesIfRequired(dependencyCacheDirectory, knownDependencyIds);
+        final Collection<Path> result = doDeleteUnknownDependenciesIfRequired(dependencyCacheDirectory, knownDependencyIds);
+        progress.completed();
+        return result;
     }
 
     @Nonnull
     public Collection<Path> deleteAllCachedDependenciesIfRequired() throws Exception {
+        final ProgressLogger progress = _progressLoggerFactory.newOperation(DependencyHandler.class);
+        progress.setDescription("Delete all cached dependencies");
+        progress.started("Delete all cached dependencies if required...");
         final DependenciesSettings dependencies = _settings.getDependencies();
         final Path dependencyCacheDirectory = dependencies.getDependencyCache();
-        return doDeleteAllCachedDependenciesIfRequired(dependencyCacheDirectory);
+        final Collection<Path> result = doDeleteAllCachedDependenciesIfRequired(dependencyCacheDirectory);
+        progress.completed();
+        return result;
     }
 
     @Nonnull

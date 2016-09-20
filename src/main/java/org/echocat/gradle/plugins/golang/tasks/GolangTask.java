@@ -1,89 +1,34 @@
 package org.echocat.gradle.plugins.golang.tasks;
 
-import org.echocat.gradle.plugins.golang.DependencyHandler;
-import org.echocat.gradle.plugins.golang.model.*;
-import org.gradle.api.DefaultTask;
-import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskAction;
+import groovy.lang.Closure;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public abstract class GolangTask extends DefaultTask {
+public class GolangTask extends GolangTaskSupport {
 
-    @Nonnull
-    private final Settings _globalSettings;
-    @Nonnull
-    private final Settings _taskSettings;
     @Nullable
-    private Settings _mergedSettings;
+    private Closure<?> _action;
 
-    public GolangTask() {
-        final Project project = getProject();
-
-        _globalSettings = new Settings(project, project.getExtensions());
-        _taskSettings = new Settings(project, getExtensions(), false);
-    }
-
-    @Nonnull
-    public Settings getGlobalSettings() {
-        return _globalSettings;
-    }
-
-    @Nonnull
-    public Settings getTaskSettings() {
-        return _taskSettings;
-    }
-
-    @Nonnull
-    public Settings getSettings() {
-        final Settings result = _mergedSettings;
-        if (result == null) {
-            throw new IllegalStateException("Not called within runBare().");
+    @Override
+    public void run() throws Exception {
+        final Closure<?> action = _action;
+        if (_action == null) {
+            throw new IllegalArgumentException("There was neither an action property defined for task " + getName() + " nor the body of run() was overwritten.");
         }
-        return result;
+        action.call();
     }
 
-    @Nonnull
-    protected GolangSettings getGolang() {
-        return getSettings().getGolang();
+    @Nullable
+    public Closure<?> getAction() {
+        return _action;
     }
 
-    @Nonnull
-    protected BuildSettings getBuild() {
-        return getSettings().getBuild();
+    public void setAction(@Nullable Closure<?> action) {
+        _action = action;
     }
 
-    @Nonnull
-    protected DependenciesSettings getDependencies() {
-        return getSettings().getDependencies();
+    public void action(@Nullable Closure<?> action) {
+        setAction(action);
     }
-
-    @Nonnull
-    protected ToolchainSettings getToolchain() {
-        return getSettings().getToolchain();
-    }
-
-    @Nonnull
-    protected TestingSettings getTesting() {
-        return getSettings().getTesting();
-    }
-
-    @TaskAction
-    public final void runBare() throws Exception {
-        _mergedSettings = _globalSettings.merge(_taskSettings);
-        try {
-            run();
-        } finally {
-            _mergedSettings = null;
-        }
-    }
-
-    @Nonnull
-    protected DependencyHandler getDependencyHandler() {
-        return new DependencyHandler(getSettings());
-    }
-
-    public abstract void run() throws Exception;
 
 }
