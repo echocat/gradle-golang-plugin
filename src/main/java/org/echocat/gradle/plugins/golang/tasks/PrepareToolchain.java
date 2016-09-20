@@ -41,7 +41,10 @@ public class PrepareToolchain extends GolangTaskSupport {
         final ProgressLogger progress = startProgress("Prepare toolchain");
         downloadBootstrapIfRequired(progress);
         downloadSourcesIfRequired(progress);
-        if (!buildHostIfRequired(progress) && !buildTargetsIfRequired(progress) && !buildToolsIfRequired(progress)) {
+        final boolean hostBuild = buildHostIfRequired(progress);
+        final boolean targetsBuild = buildTargetsIfRequired(progress);
+        final boolean toolsBuild = buildToolsIfRequired(progress);
+        if (!hostBuild && !targetsBuild && !toolsBuild) {
             getState().upToDate();
         }
         progress.completed();

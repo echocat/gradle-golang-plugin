@@ -14,6 +14,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -76,21 +77,24 @@ public class ArchiveUtils {
                     try (final OutputStream os = newOutputStream(entryFile)) {
                         copy(archive, os);
                     }
-                    final int mode = entry.getMode();
-                    final Set<PosixFilePermission> perms = new HashSet<>();
-                    perms.add(PosixFilePermission.OWNER_READ);
-                    perms.add(PosixFilePermission.GROUP_READ);
-                    perms.add(PosixFilePermission.OTHERS_READ);
-                    //noinspection OctalInteger,ResultOfMethodCallIgnored,IncompatibleBitwiseMaskOperation
-                    if ((mode | 0001) > 0) {
-                        perms.add(PosixFilePermission.OWNER_EXECUTE);
+                    final PosixFileAttributeView view = getFileAttributeView(entryFile, PosixFileAttributeView.class);
+                    if (view != null) {
+                        final int mode = entry.getMode();
+                        final Set<PosixFilePermission> perms = new HashSet<>();
+                        perms.add(PosixFilePermission.OWNER_READ);
+                        perms.add(PosixFilePermission.GROUP_READ);
+                        perms.add(PosixFilePermission.OTHERS_READ);
+                        //noinspection OctalInteger,ResultOfMethodCallIgnored,IncompatibleBitwiseMaskOperation
+                        if ((mode | 0001) > 0) {
+                            perms.add(PosixFilePermission.OWNER_EXECUTE);
+                        }
+                        //noinspection OctalInteger,ResultOfMethodCallIgnored,IncompatibleBitwiseMaskOperation
+                        if ((mode | 0100) > 0) {
+                            perms.add(PosixFilePermission.GROUP_EXECUTE);
+                            perms.add(PosixFilePermission.OTHERS_EXECUTE);
+                        }
+                        view.setPermissions(perms);
                     }
-                    //noinspection OctalInteger,ResultOfMethodCallIgnored,IncompatibleBitwiseMaskOperation
-                    if ((mode | 0100) > 0) {
-                        perms.add(PosixFilePermission.GROUP_EXECUTE);
-                        perms.add(PosixFilePermission.OTHERS_EXECUTE);
-                    }
-                    Files.setPosixFilePermissions(entryFile, perms);
                 }
                 entry = archive.getNextTarEntry();
             }
@@ -113,7 +117,6 @@ public class ArchiveUtils {
                         }
                     }
                 }
-
             }
         }
     }
