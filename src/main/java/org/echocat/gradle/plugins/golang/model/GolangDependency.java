@@ -1,6 +1,7 @@
 package org.echocat.gradle.plugins.golang.model;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.echocat.gradle.plugins.golang.vcs.RawVcsReference;
 import org.echocat.gradle.plugins.golang.vcs.VcsType;
 import org.echocat.gradle.plugins.golang.vcs.VcsValidationException;
@@ -53,8 +54,16 @@ public class GolangDependency implements Dependency, Comparable<GolangDependency
             setRepositoryType(original.getRepositoryType());
             setUpdatePolicy(original.getUpdatePolicy());
         } else {
-            setGroup(raw.getGroup());
-            setVersion(raw.getVersion());
+            final String name = raw.getName();
+            if (StringUtils.isEmpty(name)) {
+                setGroup(raw.getGroup());
+            } else {
+                setGroup(raw.getGroup() + "/" + name);
+            }
+            final String version = raw.getVersion();
+            if (StringUtils.isNotEmpty(version) && !"default".equalsIgnoreCase(version)) {
+                setVersion(version);
+            }
         }
     }
 

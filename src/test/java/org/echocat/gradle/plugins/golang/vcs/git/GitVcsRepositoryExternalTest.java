@@ -8,7 +8,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.nio.file.Paths;
 
-import static org.echocat.gradle.plugins.golang.logging.DefaultLog.setDebugEnabled;
 import static org.echocat.gradle.plugins.golang.vcs.VcsReference.vcsReference;
 import static org.echocat.gradle.plugins.golang.vcs.VcsType.git;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -19,10 +18,6 @@ public class GitVcsRepositoryExternalTest {
 
     private static final String NAME = "github.com/echocat/caretakerd";
     private static final String URI = "https://github.com/echocat/caretakerd.git";
-
-    static {
-        setDebugEnabled(true);
-    }
 
     @SuppressWarnings("ConstantConditions")
     @Test

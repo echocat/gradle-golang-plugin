@@ -4,8 +4,7 @@ import org.apache.commons.io.IOUtils;
 import org.codehaus.plexus.util.DirectoryScanner;
 import org.echocat.gradle.plugins.golang.model.BuildSettings;
 import org.echocat.gradle.plugins.golang.model.GolangSettings;
-import org.gradle.logging.ProgressLogger;
-import org.gradle.logging.ProgressLoggerFactory;
+import org.gradle.internal.logging.progress.ProgressLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

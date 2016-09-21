@@ -1,6 +1,6 @@
 package org.echocat.gradle.plugins.golang.vcs;
 
-import org.gradle.logging.ProgressLogger;
+import org.gradle.internal.logging.progress.ProgressLogger;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;

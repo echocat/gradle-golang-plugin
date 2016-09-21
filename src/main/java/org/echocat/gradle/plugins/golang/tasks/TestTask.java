@@ -6,8 +6,7 @@ import org.codehaus.plexus.util.DirectoryScanner;
 import org.echocat.gradle.plugins.golang.model.*;
 import org.echocat.gradle.plugins.golang.utils.Executor;
 import org.echocat.gradle.plugins.golang.utils.Executor.ExecutionFailedExceptionProducer;
-import org.gradle.logging.ProgressLogger;
-import org.gradle.logging.ProgressLoggerFactory;
+import org.gradle.internal.logging.progress.ProgressLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +22,7 @@ import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static org.echocat.gradle.plugins.golang.DependencyHandler.GetTask.by;
 import static org.echocat.gradle.plugins.golang.model.GolangDependency.Type.source;
 import static org.echocat.gradle.plugins.golang.model.GolangDependency.newDependency;
 import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
@@ -70,7 +70,10 @@ public class TestTask extends GolangTaskSupport {
             return;
         }
 
-        getDependencyHandler().get("test", packages);
+        getDependencyHandler().get(by("test")
+            .withAdditionalConfigurations("build")
+            .withAdditionalRequiredPackages(packages)
+        );
 
         final ProgressLogger progress = startProgress("Run tests");
 

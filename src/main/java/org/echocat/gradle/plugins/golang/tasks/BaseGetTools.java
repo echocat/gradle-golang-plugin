@@ -3,7 +3,7 @@ package org.echocat.gradle.plugins.golang.tasks;
 import org.echocat.gradle.plugins.golang.DependencyHandler.GetResult;
 import org.echocat.gradle.plugins.golang.model.*;
 import org.echocat.gradle.plugins.golang.model.GolangDependency.Type;
-import org.gradle.logging.ProgressLogger;
+import org.gradle.internal.logging.progress.ProgressLogger;
 
 import javax.annotation.Nonnull;
 import java.nio.file.Path;
@@ -13,6 +13,7 @@ import java.util.Map.Entry;
 import static java.lang.Boolean.TRUE;
 import static java.nio.file.Files.exists;
 import static org.echocat.gradle.plugins.golang.DependencyHandler.GetResult.downloaded;
+import static org.echocat.gradle.plugins.golang.DependencyHandler.GetTask.by;
 import static org.echocat.gradle.plugins.golang.model.Platform.currentPlatform;
 import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
 import static org.echocat.gradle.plugins.golang.utils.FileUtils.delete;
@@ -32,7 +33,7 @@ public class BaseGetTools extends GolangTaskSupport {
     public void run() throws Exception {
         final ProgressLogger progress = startProgress("Get tools");
 
-        final Map<GolangDependency, GetResult> dependencies = getDependencyHandler().get("tool");
+        final Map<GolangDependency, GetResult> dependencies = getDependencyHandler().get(by("tool"));
         boolean atLeastOneBuild = false;
         for (final Entry<GolangDependency, GetResult> entry : dependencies.entrySet()) {
             final GolangDependency dependency = entry.getKey();

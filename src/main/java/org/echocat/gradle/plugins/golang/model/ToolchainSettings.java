@@ -15,6 +15,8 @@ import java.util.regex.Pattern;
 
 import static java.nio.file.Files.isExecutable;
 import static java.util.regex.Pattern.compile;
+import static org.echocat.gradle.plugins.golang.Constants.DEFAULT_DOWNLOAD_URI_ROOT;
+import static org.echocat.gradle.plugins.golang.Constants.DEFAULT_GO_VERSION;
 import static org.echocat.gradle.plugins.golang.model.OperatingSystem.WINDOWS;
 import static org.echocat.gradle.plugins.golang.model.OperatingSystem.currentOperatingSystem;
 import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
@@ -37,8 +39,8 @@ public class ToolchainSettings {
     public ToolchainSettings(boolean initialize, @Nonnull Project project) {
         _project = project;
         if (initialize) {
-            _goversion = "go1.6.2";
-            _downloadUriRoot = URI.create("https://storage.googleapis.com/golang/");
+            _goversion = DEFAULT_GO_VERSION;
+            _downloadUriRoot = DEFAULT_DOWNLOAD_URI_ROOT;
         }
     }
 

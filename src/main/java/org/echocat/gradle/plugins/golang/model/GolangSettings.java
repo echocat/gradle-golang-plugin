@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+import static org.echocat.gradle.plugins.golang.Constants.DEFAULT_PLATFORMS;
 import static org.echocat.gradle.plugins.golang.model.Platform.toPlatforms;
 
 public class GolangSettings {
@@ -25,7 +26,7 @@ public class GolangSettings {
     public GolangSettings(boolean initialize, @Nonnull Project project) {
         _project = project;
         if (initialize) {
-            _platforms = "linux-386,linux-amd64,windows-386,windows-amd64,darwin-amd64";
+            _platforms = DEFAULT_PLATFORMS;
             _cacheRoot = Paths.get(System.getProperty("user.home", ".")).resolve(".go");
         }
     }

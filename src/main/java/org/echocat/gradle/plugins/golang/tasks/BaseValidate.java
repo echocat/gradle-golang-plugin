@@ -1,7 +1,7 @@
 package org.echocat.gradle.plugins.golang.tasks;
 
 import org.echocat.gradle.plugins.golang.model.*;
-import org.gradle.logging.ProgressLogger;
+import org.gradle.internal.logging.progress.ProgressLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

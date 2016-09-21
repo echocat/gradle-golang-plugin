@@ -4,7 +4,7 @@ import org.apache.commons.io.IOUtils;
 import org.echocat.gradle.plugins.golang.Version;
 import org.echocat.gradle.plugins.golang.model.*;
 import org.echocat.gradle.plugins.golang.utils.ArchiveUtils;
-import org.gradle.logging.ProgressLogger;
+import org.gradle.internal.logging.progress.ProgressLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -6,14 +6,13 @@ import org.echocat.gradle.plugins.golang.model.GolangDependency;
 import org.echocat.gradle.plugins.golang.model.Settings;
 import org.echocat.gradle.plugins.golang.utils.FileUtils;
 import org.echocat.gradle.plugins.golang.vcs.*;
-import org.echocat.gradle.plugins.golang.vcs.VcsRepository.Utils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.internal.logging.progress.ProgressLogger;
+import org.gradle.internal.logging.progress.ProgressLoggerFactory;
 import org.gradle.internal.service.ServiceRegistry;
-import org.gradle.logging.ProgressLogger;
-import org.gradle.logging.ProgressLoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +34,7 @@ import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.Files.*;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.unmodifiableSet;
 import static org.apache.commons.lang3.StringUtils.capitalize;
 import static org.echocat.gradle.plugins.golang.DependencyHandler.DependencyDirType.*;
 import static org.echocat.gradle.plugins.golang.DependencyHandler.GetResult.alreadyExists;
@@ -74,24 +74,17 @@ public class DependencyHandler {
     }
 
     @Nonnull
-    public Map<GolangDependency, GetResult> get(@Nullable String configuration, @Nullable GolangDependency... optionalRequiredPackages) throws Exception {
-        return get(configuration, optionalRequiredPackages != null ? asList(optionalRequiredPackages) : null);
-    }
-
-    @Nonnull
-    public Map<GolangDependency, GetResult> get(@Nullable String configuration, @Nullable Collection<GolangDependency> optionalRequiredPackages) throws Exception {
+    public Map<GolangDependency, GetResult> get(@Nonnull GetTask task) throws Exception {
         final ProgressLogger progressLogger = _progressLoggerFactory.newOperation(DependencyHandler.class);
 
         final DependenciesSettings dependencies = _settings.getDependencies();
         final Map<GolangDependency, GetResult> result = new TreeMap<>();
         final Set<String> handledReferenceIds = new LinkedHashSet<>();
         final Queue<GolangDependency> toHandle = new LinkedList<>();
-        if (optionalRequiredPackages != null) {
-            toHandle.addAll(optionalRequiredPackages);
-        }
-        toHandle.addAll(dependencies(configuration));
+        toHandle.addAll(task.getAdditionalRequiredPackages());
+        toHandle.addAll(dependencies(task));
 
-        progressLogger.setDescription("Checking " + configuration + " dependencies...");
+        progressLogger.setDescription("Checking " + task.getConfiguration() + " dependencies...");
         progressLogger.started();
         GolangDependency dependency;
         while ((dependency = toHandle.poll()) != null) {
@@ -107,14 +100,14 @@ public class DependencyHandler {
                         LOGGER.info("Update dependency {} (if required)...", normalizedReferenceId);
                         progressLogger.progress("Update dependency " + normalizedReferenceId + " (if required)...");
                         if (TRUE.equals(dependencies.getForceUpdate())) {
-                            repository.forceUpdate(selectTargetDirectoryFor(configuration),
+                            repository.forceUpdate(selectTargetDirectoryFor(task),
                                 progressMonitorFor("Updating dependency " + normalizedReferenceId + "... {0,number,0.0%}", progressLogger)
                             );
                             //noinspection UseOfSystemOutOrSystemErr
                             System.out.println("Dependency " + normalizedReferenceId + " updated.");
                             progressLogger.progress("Dependency " + normalizedReferenceId + " updated.");
                         } else {
-                            final VcsFullReference fullReference = repository.updateIfRequired(selectTargetDirectoryFor(configuration),
+                            final VcsFullReference fullReference = repository.updateIfRequired(selectTargetDirectoryFor(task),
                                 progressMonitorFor("Updating dependency " + normalizedReferenceId + "... {0,number,0.0%}", progressLogger)
                             );
                             if (fullReference != null) {
@@ -158,7 +151,7 @@ public class DependencyHandler {
         }
 
         if (LOGGER.isDebugEnabled() && !handledReferenceIds.isEmpty()) {
-            final StringBuilder sb = new StringBuilder(capitalize(configuration) + " dependencies:");
+            final StringBuilder sb = new StringBuilder(capitalize(task.getConfiguration()) + " dependencies:");
             for (final String id : handledReferenceIds) {
                 sb.append("\n\t* ").append(id);
             }
@@ -170,6 +163,11 @@ public class DependencyHandler {
     protected boolean isPartOfProjectSources(@Nonnull String packageName) throws Exception {
         final String projectPackageName = _settings.getGolang().getPackageName();
         return packageName.equals(projectPackageName) || packageName.startsWith(projectPackageName + "/");
+    }
+
+    @Nonnull
+    protected Path selectTargetDirectoryFor(@Nonnull GetTask task) throws Exception {
+        return selectTargetDirectoryFor(task.getConfiguration());
     }
 
     @Nonnull
@@ -199,7 +197,6 @@ public class DependencyHandler {
                 }
             }
         }
-
         return result;
     }
 
@@ -312,7 +309,7 @@ public class DependencyHandler {
         final DependenciesSettings dependencies = _settings.getDependencies();
         final Path dependencyCacheDirectory = dependencies.getDependencyCache();
         final Set<String> knownDependencyIds = new HashSet<>();
-        for (final GolangDependency dependency : dependencies(null)) {
+        for (final GolangDependency dependency : allProjectDependencies()) {
             knownDependencyIds.add(dependency.getGroup());
         }
         final Collection<Path> result = doDeleteUnknownDependenciesIfRequired(dependencyCacheDirectory, knownDependencyIds);
@@ -333,31 +330,44 @@ public class DependencyHandler {
     }
 
     @Nonnull
-    protected Collection<GolangDependency> dependencies(@Nullable String configurationName) {
-        final List<GolangDependency> result = new ArrayList<>();
-        final Project project = _settings.getProject();
-        final ConfigurationContainer configurations = project.getConfigurations();
-        if (configurationName != null) {
-            final Configuration configuration = configurations.getByName(configurationName);
-            for (final Dependency dependency : configuration.getDependencies()) {
-                if (dependency instanceof GolangDependency) {
-                    result.add((GolangDependency) dependency);
-                } else {
-                    result.add(new GolangDependency(dependency));
-                }
-            }
-        } else {
-            for (final Configuration configuration : project.getConfigurations()) {
-                for (final Dependency dependency : configuration.getDependencies()) {
-                    if (dependency instanceof GolangDependency) {
-                        result.add((GolangDependency) dependency);
-                    } else {
-                        result.add(new GolangDependency(dependency));
-                    }
-                }
-            }
+    protected Collection<GolangDependency> dependencies(@Nonnull GetTask task) {
+        final Set<GolangDependency> result = new LinkedHashSet<>();
+        appendDependenciesOf(task.getConfiguration(), result);
+        for (final String additionalConfiguration : task.getAdditionalConfigurations()) {
+            appendDependenciesOf(additionalConfiguration, result);
         }
         return result;
+    }
+
+    protected void appendDependenciesOf(@Nonnull String configurationName, @Nonnull Collection<GolangDependency> to) {
+        final Project project = _settings.getProject();
+        final ConfigurationContainer configurations = project.getConfigurations();
+        final Configuration configuration = configurations.getByName(configurationName);
+        appendDependenciesOf(configuration, to);
+    }
+
+    @Nonnull
+    protected Collection<GolangDependency> allProjectDependencies() {
+        final Collection<GolangDependency> result = new LinkedHashSet<>();
+        final Project project = _settings.getProject();
+        for (final Configuration configuration : project.getConfigurations()) {
+            appendDependenciesOf(configuration, result);
+        }
+        return result;
+    }
+
+    protected void appendDependenciesOf(@Nonnull Configuration configuration, @Nonnull Collection<GolangDependency> to) {
+        for (final Dependency dependency : configuration.getDependencies()) {
+            final GolangDependency toAdd;
+            if (dependency instanceof GolangDependency) {
+                toAdd = (GolangDependency) dependency;
+            } else {
+                toAdd = new GolangDependency(dependency);
+            }
+            if (!to.contains(toAdd)) {
+                to.add(toAdd);
+            }
+        }
     }
 
     @Nonnull
@@ -475,4 +485,65 @@ public class DependencyHandler {
         downloaded,
         alreadyExists
     }
+
+    public static class GetTask {
+
+        @Nonnull
+        public static GetTask by(@Nonnull String configuration) {
+            return new GetTask(configuration);
+        }
+
+        @Nonnull
+        private final String _configuration;
+        @Nonnull
+        private final Set<String> _additionalConfigurations = new LinkedHashSet<>();
+        @Nonnull
+        private final Set<GolangDependency> _additionalRequiredPackages = new LinkedHashSet<>();
+
+        public GetTask(@Nonnull String configuration) {
+            _configuration = configuration;
+        }
+
+        @Nonnull
+        public GetTask withAdditionalConfigurations(@Nullable Collection<String> configurations) {
+            if (configurations != null) {
+                _additionalConfigurations.addAll(configurations);
+            }
+            return this;
+        }
+
+        @Nonnull
+        public GetTask withAdditionalConfigurations(@Nullable String... configurations) {
+            return withAdditionalConfigurations(configurations != null ? asList(configurations) : null);
+        }
+
+        @Nonnull
+        public GetTask withAdditionalRequiredPackages(@Nullable Collection<GolangDependency> requiredPackages) {
+            if (requiredPackages != null) {
+                _additionalRequiredPackages.addAll(requiredPackages);
+            }
+            return this;
+        }
+
+        @Nonnull
+        public GetTask withAdditionalRequiredPackages(@Nullable GolangDependency... requiredPackages) {
+            return withAdditionalRequiredPackages(requiredPackages != null ? asList(requiredPackages) : null);
+        }
+
+        @Nonnull
+        public String getConfiguration() {
+            return _configuration;
+        }
+
+        @Nonnull
+        public Set<String> getAdditionalConfigurations() {
+            return unmodifiableSet(_additionalConfigurations);
+        }
+
+        @Nonnull
+        public Set<GolangDependency> getAdditionalRequiredPackages() {
+            return unmodifiableSet(_additionalRequiredPackages);
+        }
+    }
+
 }

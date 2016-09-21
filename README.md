@@ -10,6 +10,7 @@ go sdk, set the right environment variables, download dependencies, ...
 
 * [Features](#features)
 * [Get it](#get-it)
+* [Requirements](#requirements)
 * [Quick start](#quick-start)
 * [Settings](#settings)
 * [Tasks](#tasks)
@@ -41,15 +42,22 @@ Find more plugins on [Gradle plugin repository](https://plugins.gradle.org/).
 
 ## Get it
 
-> This example refers gradle >2.1. For detailed examples please refer our
+> To determinate the current released version please refer our
 > [gradle plugin page](https://plugins.gradle.org/plugin/org.echocat.golang).
 
 Plugin dependency for your ``build.gradle``
 ```groovy
 plugins {
-  id "org.echocat.golang" version "0.1.5"
+  id "org.echocat.golang" version "<latest version of this plugin>"
 }
 ```
+
+## Requirements
+
+* Gradle wrapper script or Gradle (minimum 3)
+* Java (minimum 7)
+
+See [Quick start](#quick-start) for information how to install requirements.
 
 ## Quick start
 
@@ -58,7 +66,7 @@ plugins {
     [Oracle JDK download page](http://www.oracle.com/technetwork/java/javase/downloads/index.html) and download the
     latest version or use your favorite package manager to install it. 
 
-2. Download and extract [gradle-wrapper.zip](assets/gradle-wrapper.zip) in root directory of your project.
+2. Download and extract [gradle-wrapper.zip](assets/gradle-wrapper.zip) into root directory of your project.
     > To use the Gradle Wrapper is the recommend solution because there is not requirement of other tools. All is
       shipped with the your project (excluding the JDK). Other way is install [Gradle](https://www.gradle.org/) direct 
       on your computer.
@@ -72,14 +80,13 @@ plugins {
     
     group 'github.com/my-user/my-project'
     
-    dependencies {
-        build 'github.com/urfave/cli'
-        test 'github.com/stretchr/testify'
-    }
-    
     golang {
         // Set default platforms to build but make it overwritable via -Dplatforms=<..>
         platforms = System.getProperty("platforms", "linux-amd64,windows-amd64,darwin-amd64")
+        dependencies {
+            build 'github.com/urfave/cli'
+            test 'github.com/stretchr/testify'
+        }
         build {
             // Use temporary GOPATH to build everthing in
             useTemporaryGopath = true
@@ -105,17 +112,6 @@ plugins {
 // Example: github.com/my_user/my_project
 group = '' // String - REQUIRED (if golang.packageName is not set)
 
-dependencies {
-    // Dependency required for build and testing
-    build '<package name>[:<version>]'
-
-    // Dependency required only for testing
-    test '<package name>[:<version>]'
-
-    // Tool dependency required only while build process
-    tool '<package name>[:<version>]'
-}
-
 golang {
     // Comma separated list of platforms to build
     platforms = 'linux-386,linux-amd64,windows-386,windows-amd64,darwin-amd64' // String
@@ -127,6 +123,39 @@ golang {
     // Location where to place the go toolchain and other assets temporarily
     cacheRoot = '~/.go' // Path
     
+    dependencies {
+        // Here you can specify dependencies in Golang familiar way  
+        // configuration: 
+        //    * build: Required for build and testing
+        //    * test:  Required only for test
+        //    * tool:  Tool required only while build process
+        // packageName: Name of package to import. Should be the same as used in source code for import.
+        // version:     Can identify the branchname, commit revisions, ... of a package.
+        <configuration> '<packageName>[:<version>]'
+        // Example: build 'github.com/urfave/cli'
+        // ...
+    
+        // Dependency required only for testing
+        test '<package name>[:<version>]'
+        // ...
+    
+        // Tool dependency required only while build process
+        tool '<package name>[:<version>]'
+        // ...
+
+        // If true it will always download every dependency also if there are no updates available.
+        forceUpdate = false // Boolean
+
+        // If true it will delete unknown dependencies on clean task.
+        deleteUnknownDependencies = true // Boolean
+
+        // If true it will delete all dependencies on clean task.
+        deleteAllCachedDependenciesOnClean = false // Boolean
+
+        // Directory where to cache all dependencies in.
+        dependencyCache = 'vendor' // Path
+    }
+
     build {
         // GOPATH to use for build.
         // Will be replaced with a temporary one if useTemporaryGopath is set to true. 
@@ -156,20 +185,6 @@ golang {
         definitions = [] // [String]String
     }
     
-    dependencies {
-        // If true it will always download every dependency also if there are no updates available.
-        forceUpdate = false // Boolean
-
-        // If true it will delete unknown dependencies on clean task.
-        deleteUnknownDependencies = true // Boolean
-
-        // If true it will delete all dependencies on clean task.
-        deleteAllCachedDependenciesOnClean = false // Boolean
-
-        // Directory where to cache all dependencies in.
-        dependencyCache = 'vendor' // Path
-    }
-
     testing {
         // If true no tests will be executed.
         skip = false // Boolean
@@ -210,6 +225,24 @@ golang {
         // Location where to download bootstrap toolchain and target toolchain
         downloadUriRoot = 'https://storage.googleapis.com/golang/' // URI
     }
+}
+
+dependencies {
+    // Here you can define dependencies in Gradle familiar way.
+    // In this context it is not possible to provide all possible variables and you have to provide more
+    // meta information than under "golang.dependencies".
+
+    // configuration: 
+    //    * build: Required for build and testing
+    //    * test:  Required only for test
+    //    * tool:  Tool required only while build process
+    // packageName: It is required to split the package up to meet default Gradle behaviours.
+    //    Example: "github.com/urfave/cli" -> "github.com:urfave/cli"
+    // version: Identifies the version of the dependency package to use. If you want to use the default one
+    //    provide the special keyword "default".
+    <configuration> '<providerPartOfPackageName>:<restOfPackageName>:<version>'
+    // Example: build 'github.com:urfave/cli:default'
+    // ...
 }
 ```
 

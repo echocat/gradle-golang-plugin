@@ -1,12 +1,12 @@
 package org.echocat.gradle.plugins.golang.tasks;
 
 import org.apache.commons.lang3.StringUtils;
+import org.echocat.gradle.plugins.golang.DependencyHandler.GetTask;
 import org.echocat.gradle.plugins.golang.model.*;
 import org.echocat.gradle.plugins.golang.model.GolangDependency.Type;
 import org.echocat.gradle.plugins.golang.utils.Executor;
 import org.echocat.gradle.plugins.golang.utils.Executor.ExecutionFailedExceptionProducer;
-import org.gradle.logging.ProgressLogger;
-import org.gradle.logging.ProgressLoggerFactory;
+import org.gradle.internal.logging.progress.ProgressLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +15,7 @@ import java.nio.file.Path;
 
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static org.echocat.gradle.plugins.golang.DependencyHandler.GetTask.by;
 import static org.echocat.gradle.plugins.golang.model.GolangDependency.newDependency;
 import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
 
@@ -46,7 +47,9 @@ public class BuildTask extends GolangTaskSupport {
         final GolangDependency targetPackage = newDependency(packageName)
             .setType(Type.source)
             .setLocation(build.getGopathSourceRoot().resolve(packageName));
-        getDependencyHandler().get("build", targetPackage);
+        getDependencyHandler().get(by("build")
+            .withAdditionalRequiredPackages(targetPackage)
+        );
 
         final ProgressLogger progress = startProgress("Build");
 

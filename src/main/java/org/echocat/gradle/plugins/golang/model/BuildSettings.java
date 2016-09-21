@@ -1,7 +1,7 @@
 package org.echocat.gradle.plugins.golang.model;
 
-import com.google.common.collect.Iterators;
 import org.gradle.api.Project;
+import org.gradle.internal.impldep.com.google.common.collect.Iterators;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
