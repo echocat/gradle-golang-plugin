@@ -2,34 +2,13 @@ import org.echocat.gradle.plugins.golang.tasks.GolangTask
 import org.echocat.gradle.plugins.golang.utils.Executor
 import org.slf4j.LoggerFactory
 
-apply plugin: 'org.echocat.golang'
-
-buildscript {
-    repositories {
-        mavenCentral()
-        mavenLocal()
-    }
-    dependencies {
-        classpath "org.echocat.gradle.plugins:gradle-golang-plugin:0.1.8-SNAPSHOT"
-    }
+plugins {
+  id "org.echocat.golang" version "0.1.11"
 }
 
 group 'github.com/echocat/gradle-golang-plugin/samples/simple-project'
 version '0.1.1'
 
-dependencies {
-    build 'github.com/eknkc/dateformat:master'
-    build 'github.com/emicklei/go-restful'
-    build 'github.com/russross/blackfriday'
-    build 'github.com/tdewolff/minify'
-    build 'github.com/codegangsta/cli'
-    build 'gopkg.in/blaubaer/goyaml.v66'
-    build 'gopkg.in/natefinch/lumberjack.v2'
-    build 'gopkg.in/robfig/cron.v2'
-    build 'gopkg.in/jmcvetta/napping.v3'
-    test 'gopkg.in/check.v1'
-    tool 'github.com/mattn/goveralls'
-}
 
 golang {
     build {
@@ -40,6 +19,19 @@ golang {
                 "main.version": version,
                 "main.groupId": group,
         ]
+    }
+    dependencies {
+        build 'github.com/eknkc/dateformat:master'
+        build 'github.com/emicklei/go-restful'
+        build 'github.com/russross/blackfriday'
+        build 'github.com/tdewolff/minify'
+        build 'github.com/codegangsta/cli'
+        build 'gopkg.in/blaubaer/goyaml.v66'
+        build 'gopkg.in/natefinch/lumberjack.v2'
+        build 'gopkg.in/robfig/cron.v2'
+        build 'gopkg.in/jmcvetta/napping.v3'
+        test 'gopkg.in/check.v1'
+        tool 'github.com/mattn/goveralls'
     }
     testing {
         coverProfile = "${buildDir}/testing/${name}.cover"
