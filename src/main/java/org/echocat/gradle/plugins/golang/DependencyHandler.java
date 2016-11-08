@@ -173,7 +173,7 @@ public class DependencyHandler {
     @Nonnull
     protected Path selectTargetDirectoryFor(@Nullable String configuration) throws Exception {
         if ("tool".equals(configuration)) {
-            return _settings.getBuild().getGopathSourceRoot();
+            return _settings.getBuild().getFirstGopathSourceRoot();
         }
         return _settings.getDependencies().getDependencyCache();
     }
@@ -203,6 +203,7 @@ public class DependencyHandler {
     @Nonnull
     protected GolangDependency resolvePackage(@Nonnull GolangDependency demandedBy, @Nonnull String packageName) throws Exception {
         GolangDependency candidate = null;
+        //noinspection ConstantConditions
         if (candidate == null) {
             candidate = resolveVendorPackage(demandedBy, packageName);
         }
@@ -224,22 +225,24 @@ public class DependencyHandler {
 
     @Nullable
     protected GolangDependency resolveVendorPackage(@Nonnull GolangDependency demandedBy, @Nonnull String packageName) throws Exception {
-        final Path root = _settings.getBuild().getGopathSourceRoot().toAbsolutePath();
-        final Path demandedByLocation = demandedBy.getLocation();
-        if (demandedByLocation != null) {
-            Path current = demandedByLocation.toAbsolutePath();
-            while (current.startsWith(root)) {
-                final Path vendorCandidate = current.resolve("vendor");
-                if (isDirectory(vendorCandidate)) {
-                    final Path packagePathCandidate = vendorCandidate.resolve(packageName);
-                    if (containsGoSources(packagePathCandidate)) {
-                        return newDependency(packageName)
-                            .setType(implicit)
-                            .setParent(demandedBy)
-                            .setLocation(packagePathCandidate);
+        for (final Path gopathSourceRoot : _settings.getBuild().getGopathSourceRoot()) {
+            final Path root = gopathSourceRoot.toAbsolutePath();
+            final Path demandedByLocation = demandedBy.getLocation();
+            if (demandedByLocation != null) {
+                Path current = demandedByLocation.toAbsolutePath();
+                while (current.startsWith(root)) {
+                    final Path vendorCandidate = current.resolve("vendor");
+                    if (isDirectory(vendorCandidate)) {
+                        final Path packagePathCandidate = vendorCandidate.resolve(packageName);
+                        if (containsGoSources(packagePathCandidate)) {
+                            return newDependency(packageName)
+                                .setType(implicit)
+                                .setParent(demandedBy)
+                                .setLocation(packagePathCandidate);
+                        }
                     }
+                    current = current.getParent();
                 }
-                current = current.getParent();
             }
         }
         return null;
@@ -258,7 +261,7 @@ public class DependencyHandler {
 
     @Nullable
     protected GolangDependency resolveGopathPackage(@Nonnull String packageName) throws Exception {
-        final Path location = _settings.getBuild().getGopathSourceRoot().resolve(packageName);
+        final Path location = _settings.getBuild().getFirstGopathSourceRoot().resolve(packageName); // TODO! Validate this
         if (!containsGoSources(location)) {
             return null;
         }
@@ -290,6 +293,12 @@ public class DependencyHandler {
         appendFilesFor(_settings.getDependencies().getDependencyCache(), dependency, result);
         appendFilesFor(_settings.getBuild().getGopathSourceRoot(), dependency, result);
         return result;
+    }
+
+    protected void appendFilesFor(@Nonnull Iterable<Path> roots, @Nonnull GolangDependency dependency, @Nonnull Set<Path> to) throws Exception {
+        for (final Path root : roots) {
+            appendFilesFor(root, dependency, to);
+        }
     }
 
     protected void appendFilesFor(@Nonnull Path root, @Nonnull GolangDependency dependency, @Nonnull Set<Path> to) throws Exception {

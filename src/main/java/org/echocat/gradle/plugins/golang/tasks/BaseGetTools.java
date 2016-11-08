@@ -63,8 +63,8 @@ public class BaseGetTools extends GolangTaskSupport {
             delete(targetBinaryFilename.getParent());
 
             executor(toolchain.getGoBinary())
-                .workingDirectory(build.getGopath())
-                .env("GOPATH", build.getGopath())
+                .workingDirectory(build.getFirstGopath())
+                .env("GOPATH", build.getGopathAsString())
                 .env("GOROOT", toolchain.getGoroot())
                 .env("GOOS", platform.getOperatingSystem().getNameInGo())
                 .env("GOARCH", platform.getArchitecture().getNameInGo())

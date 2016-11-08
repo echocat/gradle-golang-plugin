@@ -132,8 +132,8 @@ public class TestTask extends GolangTaskSupport {
         final Platform platform = settings.getHostPlatform();
 
         final Executor executor = executor(toolchain.getGoBinary())
-            .workingDirectory(build.getGopath())
-            .env("GOPATH", build.getGopath())
+            .workingDirectory(build.getFirstGopath())
+            .env("GOPATH", build.getGopathAsString())
             .env("GOROOT", toolchain.getGoroot())
             .env("GOOS", platform.getOperatingSystem().getNameInGo())
             .env("GOARCH", platform.getArchitecture().getNameInGo())
@@ -198,8 +198,8 @@ public class TestTask extends GolangTaskSupport {
         final ToolchainSettings toolchain = getToolchain();
 
         executor(toolchain.getGoBinary())
-            .workingDirectory(build.getGopath())
-            .env("GOPATH", build.getGopath())
+            .workingDirectory(build.getFirstGopath())
+            .env("GOPATH", build.getGopathAsString())
             .env("GOROOT", toolchain.getGoroot())
             .arguments("tool", "cover")
             .arguments("-html", profile)
@@ -215,10 +215,12 @@ public class TestTask extends GolangTaskSupport {
         final String[] explicitSelected = testing.getPackages();
         if (explicitSelected != null && explicitSelected.length > 0) {
             for (final String explicit : explicitSelected) {
-                result.add(newDependency(explicit)
-                    .setType(source)
-                    .setLocation(build.getGopathSourceRoot().resolve(explicit))
-                );
+                for (final Path gopath : build.getGopathSourceRoot()) {
+                    result.add(newDependency(explicit)
+                        .setType(source)
+                        .setLocation(gopath.resolve(explicit))
+                    );
+                }
             }
         } else {
             final GolangSettings golang = getGolang();
@@ -233,17 +235,21 @@ public class TestTask extends GolangTaskSupport {
             for (final String file : scanner.getIncludedFiles()) {
                 final String path = FilenameUtils.getPathNoEndSeparator(file).replace(File.separatorChar, '/');
                 final String packageName = isNotEmpty(path) ? base + "/" + path : base;
-                result.add(newDependency(packageName)
-                    .setType(source)
-                    .setLocation(build.getGopathSourceRoot().resolve(packageName))
-                );
+                for (final Path gopath : build.getGopathSourceRoot()) {
+                    result.add(newDependency(packageName)
+                        .setType(source)
+                        .setLocation(gopath.resolve(packageName))
+                    );
+                }
             }
             for (final String directory : scanner.getIncludedDirectories()) {
                 final String packageName = isNotEmpty(directory) ? base + "/" + directory.replace(File.separatorChar, '/') : base;
-                result.add(newDependency(packageName)
-                    .setType(source)
-                    .setLocation(build.getGopathSourceRoot().resolve(packageName))
-                );
+                for (final Path gopath : build.getGopathSourceRoot()) {
+                    result.add(newDependency(packageName)
+                        .setType(source)
+                        .setLocation(gopath.resolve(packageName))
+                    );
+                }
             }
         }
         if (LOGGER.isDebugEnabled()) {

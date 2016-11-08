@@ -4,21 +4,25 @@ import org.gradle.api.Project;
 import org.gradle.internal.impldep.com.google.common.collect.Iterators;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.Map.Entry;
 
-import static java.io.File.pathSeparator;
-import static java.io.File.separator;
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static java.io.File.*;
+import static java.nio.file.Files.createDirectories;
+import static java.nio.file.Files.notExists;
+import static java.util.Collections.singletonList;
+import static org.apache.commons.lang3.StringUtils.*;
 
 public class BuildSettings {
 
     @Nonnull
     private final Project _project;
-    private Path _gopath;
+    private List<Path> _gopath;
     private Boolean _useTemporaryGopath;
     private String[] _includes;
     private String[] _excludes;
@@ -32,7 +36,17 @@ public class BuildSettings {
         if (initialize) {
             final String gopath = System.getenv("GOPATH");
             if (isNotEmpty(gopath)) {
-                _gopath = Paths.get(gopath).toAbsolutePath();
+                setGopath(gopath);
+            } else {
+                final Path tempGopath = Paths.get(System.getProperty("java.io.tmpdir", "tmp")).resolve("gopath");
+                if (notExists(tempGopath)) {
+                    try {
+                        createDirectories(tempGopath);
+                    } catch (final IOException e) {
+                        throw new RuntimeException("Could not create temporary gopath: " + tempGopath, e);
+                    }
+                }
+                setGopath(tempGopath);
             }
             _outputFilenamePattern = project.getBuildDir().toPath().resolve("out").resolve(project.getName()) + "-%{platform}%{extension}";
             _excludes = new String[]{
@@ -41,15 +55,57 @@ public class BuildSettings {
         }
     }
 
-    public Path getGopath() {
+    @Nullable
+    public List<Path> getGopath() {
         return _gopath;
+    }
+
+    @Nonnull
+    public Path getFirstGopath() {
+        final List<Path> gopath = getGopath();
+        if (gopath == null) {
+            throw new NullPointerException("null for gopath set.");
+        }
+        final Iterator<Path> i = gopath.iterator();
+        if (!i.hasNext()) {
+            throw new NullPointerException("empty for gopath set.");
+        }
+        return i.next();
+    }
+
+    public String getGopathAsString() {
+        return join(getGopath(), pathSeparatorChar);
+    }
+
+    public void setGopath(List<Path> gopath) {
+        if (gopath == null) {
+            throw new NullPointerException("null for gopath provided.");
+        }
+        if (gopath.isEmpty()) {
+            throw new IllegalArgumentException("empty gopath provided.");
+        }
+        _gopath = gopath;
     }
 
     public void setGopath(Path gopath) {
         if (gopath == null) {
             throw new NullPointerException("null for gopath provided.");
         }
-        _gopath = gopath;
+        setGopath(singletonList(gopath));
+    }
+
+    public void setGopath(String gopath) {
+        if (gopath == null) {
+            throw new NullPointerException("null for gopath provided.");
+        }
+        final List<Path> paths = new ArrayList<>();
+        for (final String plainPath : split(gopath, pathSeparatorChar)) {
+            final String trimmedPlainPath = plainPath.trim();
+            if (isNotEmpty(gopath)) {
+                paths.add(Paths.get(trimmedPlainPath).toAbsolutePath());
+            }
+        }
+        setGopath(paths);
     }
 
     public Boolean getUseTemporaryGopath() {
@@ -149,8 +205,20 @@ public class BuildSettings {
     }
 
     @Nonnull
-    public Path getGopathSourceRoot() {
-        return getGopath().resolve("src");
+    public List<Path> getGopathSourceRoot() {
+        final List<Path> originals = getGopath();
+        final List<Path> results = new ArrayList<>(originals != null ? originals.size() : 0);
+        if (originals != null) {
+            for (final Path original : originals) {
+                results.add(original.resolve("src"));
+            }
+        }
+        return results;
+    }
+
+    @Nonnull
+    public Path getFirstGopathSourceRoot() {
+        return getFirstGopath().resolve("src");
     }
 
     @Nonnull

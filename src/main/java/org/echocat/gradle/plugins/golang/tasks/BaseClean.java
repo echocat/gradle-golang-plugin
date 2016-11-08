@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static java.lang.Boolean.TRUE;
@@ -87,9 +88,14 @@ public class BaseClean extends GolangTaskSupport {
     protected Set<Path> doNotCleanSubTreeOfThisPaths() {
         final Set<Path> results = new HashSet<>();
         if (TRUE.equals(getBuild().getUseTemporaryGopath())) {
-            final Path packagePath = getGolang().packagePathFor(getBuild().getGopath());
-            final Path packageVendorPath = packagePath.resolve("vendor");
-            results.add(packageVendorPath);
+            final List<Path> paths = getBuild().getGopath();
+            if (paths != null) {
+                for (final Path gopath : paths) {
+                    final Path packagePath = getGolang().packagePathFor(gopath);
+                    final Path packageVendorPath = packagePath.resolve("vendor");
+                    results.add(packageVendorPath);
+                }
+            }
         }
         return results;
     }

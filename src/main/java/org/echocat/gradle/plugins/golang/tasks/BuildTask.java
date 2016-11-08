@@ -1,7 +1,6 @@
 package org.echocat.gradle.plugins.golang.tasks;
 
 import org.apache.commons.lang3.StringUtils;
-import org.echocat.gradle.plugins.golang.DependencyHandler.GetTask;
 import org.echocat.gradle.plugins.golang.model.*;
 import org.echocat.gradle.plugins.golang.model.GolangDependency.Type;
 import org.echocat.gradle.plugins.golang.utils.Executor;
@@ -11,9 +10,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static java.lang.Boolean.TRUE;
+import static java.nio.file.Files.isDirectory;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.echocat.gradle.plugins.golang.DependencyHandler.GetTask.by;
 import static org.echocat.gradle.plugins.golang.model.GolangDependency.newDependency;
@@ -42,11 +43,11 @@ public class BuildTask extends GolangTaskSupport {
 
     @Override
     public void run() throws Exception {
-        final BuildSettings build = getBuild();
         final String packageName = getGolang().getPackageName();
         final GolangDependency targetPackage = newDependency(packageName)
             .setType(Type.source)
-            .setLocation(build.getGopathSourceRoot().resolve(packageName));
+            .setLocation(selectPackageLocation(packageName));
+
         getDependencyHandler().get(by("build")
             .withAdditionalRequiredPackages(targetPackage)
         );
@@ -60,24 +61,28 @@ public class BuildTask extends GolangTaskSupport {
         progress.completed();
     }
 
+    protected Path selectPackageLocation(@Nonnull String packageName) {
+        final BuildSettings build = getBuild();
+        for (final Path gopathSourceRoot : build.getGopathSourceRoot()) {
+            final Path candidate = gopathSourceRoot.resolve(packageName);
+            if (isDirectory(candidate)) {
+                return candidate;
+            }
+        }
+        throw new IllegalStateException("Project '" + packageName + "' is not part of GOPATH (" + build.getGopathAsString() + ").");
+    }
+
     protected void executeFor(@Nonnull Platform platform, @Nonnull GolangDependency targetPackage, @Nonnull ProgressLogger progress) throws Exception {
-        final GolangSettings settings = getGolang();
         final ToolchainSettings toolchain = getToolchain();
         final BuildSettings build = getBuild();
-
-        final Path expectedPackagePath = settings.packagePathFor(build.getGopath());
-        final Path projectBasedir = settings.getProjectBasedir();
-        if (!expectedPackagePath.startsWith(projectBasedir)) {
-            throw new IllegalStateException("Project '" + targetPackage.getGroup() + "' is not part of GOPATH (" + build.getGopath() + "). Current location: " + projectBasedir);
-        }
 
         final Path outputFilename = build.outputFilenameFor(platform);
         progress.progress("Building " + outputFilename + "...");
         LOGGER.info("Building {}...", outputFilename);
 
         final Executor executor = executor(toolchain.getGoBinary())
-            .workingDirectory(build.getGopath())
-            .env("GOPATH", build.getGopath())
+            .workingDirectory(build.getFirstGopath())
+            .env("GOPATH", build.getGopathAsString())
             .env("GOROOT", toolchain.getGoroot())
             .env("GOOS", platform.getOperatingSystem().getNameInGo())
             .env("GOARCH", platform.getArchitecture().getNameInGo())

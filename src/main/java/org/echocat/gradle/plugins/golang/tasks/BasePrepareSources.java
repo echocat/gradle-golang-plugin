@@ -40,10 +40,11 @@ public class BasePrepareSources extends GolangTaskSupport {
         final BuildSettings build = getBuild();
         boolean atLeastOneCopied = false;
         if (TRUE.equals(build.getUseTemporaryGopath())) {
-            progress.progress("Prepare GOPATH " + build.getGopath() + "...");
-            LOGGER.info("Prepare GOPATH ({})...", build.getGopath());
+            final Path gopath = build.getFirstGopath();
+            progress.progress("Prepare GOPATH " + gopath + "...");
+            LOGGER.info("Prepare GOPATH ({})...", gopath);
             final Path projectBasedir = settings.getProjectBasedir();
-            final Path packagePath = settings.packagePathFor(build.getGopath());
+            final Path packagePath = settings.packagePathFor(gopath);
             final Path dependencyCachePath = getDependencies().getDependencyCache();
             prepareDependencyCacheIfNeeded(packagePath, dependencyCachePath);
 

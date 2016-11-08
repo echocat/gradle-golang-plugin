@@ -64,7 +64,7 @@ public class BaseValidate extends GolangTaskSupport {
         LOGGER.info("Go version:       {}", toolchain.getGoversion());
         LOGGER.info("GOROOT:           {}", toolchain.getGoroot());
         LOGGER.info("GOROOT_BOOTSTRAP: {}", toolchain.getBootstrapGoroot());
-        LOGGER.info("GOPATH:           {}", build.getGopath());
+        LOGGER.info("GOPATH:           {}", build.getGopathAsString());
     }
 
     protected void configureGorootIfNeeded() {
