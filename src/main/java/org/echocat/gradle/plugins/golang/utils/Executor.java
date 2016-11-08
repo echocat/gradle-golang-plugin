@@ -68,6 +68,11 @@ public class Executor {
         _stdout = stdout != null ? stdout : new ByteArrayOutputStream();
         _stderr = stderr != null ? stderr : _stdout;
         _executable = executable;
+        removeEnv("GOROOT");
+        removeEnv("GOROOT_BOOTSTRAP");
+        removeEnv("GOPATH");
+        removeEnv("GOOS");
+        removeEnv("GOARCH");
     }
 
     @Nonnull
