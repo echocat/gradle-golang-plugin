@@ -14,6 +14,7 @@ go sdk, set the right environment variables, download dependencies, ...
 * [Quick start](#quick-start)
 * [Settings](#settings)
 * [Tasks](#tasks)
+* [Running external tools](#running-external-tools)
 * [Contributing](#contributing)
 * [License](#license)
 
@@ -306,6 +307,89 @@ Depends on: ``validate``, ``prepareToolchain``, ``prepareSources``, ``getTools``
 
 Detect parameters of the whole host system relative to the configuration and resolve missing parameters.
  Every other tasks needs this task to work. 
+
+## Running external tools
+
+### Buildin tools
+
+At the end of ``build.gradle``:
+```groovy
+// ...
+
+// Create new task based on the GolangTask support implementation
+class VetTask extends org.echocat.gradle.plugins.golang.tasks.GolangTask {
+    void run() {
+        // Create a new executor that will execute to configured go binary with the actual logger
+        //
+        // To use the "toolchain.goBinary" is required because this plugin will download
+        // and configure Go by itself and respect characteristic of every platform.
+        //
+        // If you use "logger" you can see the stdout of the command with "gradle --info"
+        // ... every output that was logged to stderr will be logged also without "--info" to
+        // WARN level.
+        // You can omit "logger" if you only want to see output in case of errors.
+        org.echocat.gradle.plugins.golang.utils.Executor.executor(toolchain.goBinary, logger)
+                // Provide the command the resolved GOROOT.
+                // Do not resolve it by your own. Trust the plugin way because it respects
+                // characteristic of every platform.
+                .env("GOROOT", toolchain.goroot)
+                // Provide the command the resolved GOPATH.
+                // Do not resolve it by your own. Trust the plugin way because it respects
+                // characteristic of every platform and also handle temporary and separated
+                // environments...
+                .env("GOPATH", build.gopathAsString)
+                // Provide the arguments for the command....
+                .arguments("vet", "-x", golang.packageName)
+                // Execute everything. If it fails (with some exit code not equal to 0) the
+                // whole build process will be fail also.
+                .execute()
+    }
+}
+// Create this as a new Gradle task
+task vet(type: VetTask)
+// Make test task depend on this task. This will cause in every moment you
+// call "gradle test" also vet is called.
+test.dependsOn vet
+```
+
+### External tools
+
+In the dependencies section of your ``build.gradle``:
+```groovy
+// ...
+golang {
+    // ...
+    dependencies {
+        // ...
+        // This will download and build the golint tool on build of this project
+        tool 'github.com/golang/lint/golint'
+    }
+    // ...
+````
+
+At the end of ``build.gradle``:
+```groovy
+// ...
+
+class LintTask extends org.echocat.gradle.plugins.golang.tasks.GolangTask {
+    void run() {
+        // Create a new executor that will call the downloaded and build tool.
+        // Tool binaries are generally located under:
+        // <project dir>/build/<tool package name><executable suffix>
+        // On Linux/macOS the suffix is empty - but on Windows ".exe": So never forget to append
+        // ${toolchain.executableSuffix} to executable string.
+        org.echocat.gradle.plugins.golang.utils.Executor.executor("${project.buildDir}/tools/github.com/golang/lint/golint${toolchain.executableSuffix}")
+                .env("GOROOT", toolchain.goroot)
+                .env("GOPATH", build.gopathAsString)
+                // "-set_exit_status" will force lint to fail with exit code 1 if any violation
+                // is found. This will cause the build process to fail in this case.
+                .arguments("-set_exit_status", golang.packageName)
+                .execute()
+    }
+}
+task lint(type: LintTask)
+test.dependsOn lint
+```
 
 ## Contributing
 
