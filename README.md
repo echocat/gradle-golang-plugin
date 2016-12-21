@@ -55,7 +55,7 @@ plugins {
 
 ## Requirements
 
-* Gradle wrapper script or Gradle (minimum 3)
+* Gradle wrapper script or Gradle (minimum 3.2.1)
 * Java (minimum 7)
 
 See [Quick start](#quick-start) for information how to install requirements.

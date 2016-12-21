@@ -26,7 +26,7 @@ golang {
         build 'github.com/russross/blackfriday'
         build 'github.com/tdewolff/minify'
         build 'github.com/codegangsta/cli'
-        build 'gopkg.in/blaubaer/goyaml.v66'
+        build 'gopkg.in/blaubaer/yaml.v66'
         build 'gopkg.in/natefinch/lumberjack.v2'
         build 'gopkg.in/robfig/cron.v2'
         build 'gopkg.in/jmcvetta/napping.v3'

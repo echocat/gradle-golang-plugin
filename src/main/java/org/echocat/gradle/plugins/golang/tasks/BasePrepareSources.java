@@ -19,6 +19,8 @@ import static org.echocat.gradle.plugins.golang.model.OperatingSystem.WINDOWS;
 import static org.echocat.gradle.plugins.golang.model.OperatingSystem.currentOperatingSystem;
 import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
 import static org.echocat.gradle.plugins.golang.utils.FileUtils.ensureParentOf;
+import static org.gradle.api.internal.tasks.TaskExecutionOutcome.SKIPPED;
+import static org.gradle.api.internal.tasks.TaskExecutionOutcome.UP_TO_DATE;
 
 public class BasePrepareSources extends GolangTaskSupport {
 
@@ -75,10 +77,10 @@ public class BasePrepareSources extends GolangTaskSupport {
                 }
             }
             if (!atLeastOneCopied) {
-                getState().upToDate();
+                getState().setOutcome(UP_TO_DATE);
             }
         } else {
-            getState().skipped("SKIPPED");
+            getState().setOutcome(SKIPPED);
         }
 
         progress.completed();

@@ -28,6 +28,7 @@ import static org.echocat.gradle.plugins.golang.model.GolangDependency.newDepend
 import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
 import static org.echocat.gradle.plugins.golang.utils.FileUtils.*;
 import static org.echocat.gradle.plugins.golang.utils.FileUtils.delete;
+import static org.gradle.api.internal.tasks.TaskExecutionOutcome.SKIPPED;
 
 public class TestTask extends GolangTaskSupport {
 
@@ -59,14 +60,14 @@ public class TestTask extends GolangTaskSupport {
     public void run() throws Exception {
         final TestingSettings testing = getTesting();
         if (Boolean.TRUE.equals(testing.getSkip()) || "true".equalsIgnoreCase(System.getProperty("skipTests"))) {
-            getState().skipped("SKIPPED");
+            getState().setOutcome(SKIPPED);
             return;
         }
         final Path coverProfile = preHandlePackagesCover();
 
         final Set<GolangDependency> packages = selectPackages();
         if (packages.isEmpty()) {
-            getState().skipped("NO-TESTS-FOUND");
+            getState().setOutcome(SKIPPED);
             return;
         }
 

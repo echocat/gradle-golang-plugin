@@ -17,6 +17,7 @@ import static org.echocat.gradle.plugins.golang.DependencyHandler.GetTask.by;
 import static org.echocat.gradle.plugins.golang.model.Platform.currentPlatform;
 import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
 import static org.echocat.gradle.plugins.golang.utils.FileUtils.delete;
+import static org.gradle.api.internal.tasks.TaskExecutionOutcome.UP_TO_DATE;
 
 public class BaseGetTools extends GolangTaskSupport {
 
@@ -44,7 +45,7 @@ public class BaseGetTools extends GolangTaskSupport {
             }
         }
         if (!atLeastOneBuild) {
-            getState().upToDate();
+            getState().setOutcome(UP_TO_DATE);
         }
 
         progress.completed();

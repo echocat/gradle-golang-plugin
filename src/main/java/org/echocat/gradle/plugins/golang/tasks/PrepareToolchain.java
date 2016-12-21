@@ -25,6 +25,7 @@ import static java.nio.file.Files.*;
 import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
 import static org.echocat.gradle.plugins.golang.utils.FileUtils.createDirectoriesIfRequired;
 import static org.echocat.gradle.plugins.golang.utils.FileUtils.deleteQuietly;
+import static org.gradle.api.internal.tasks.TaskExecutionOutcome.UP_TO_DATE;
 
 public class PrepareToolchain extends GolangTaskSupport {
 
@@ -45,7 +46,7 @@ public class PrepareToolchain extends GolangTaskSupport {
         final boolean targetsBuild = buildTargetsIfRequired(progress);
         final boolean toolsBuild = buildToolsIfRequired(progress);
         if (!hostBuild && !targetsBuild && !toolsBuild) {
-            getState().upToDate();
+            getState().setOutcome(UP_TO_DATE);
         }
         progress.completed();
     }
