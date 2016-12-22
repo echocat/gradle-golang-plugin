@@ -64,6 +64,11 @@ public class Executor {
         return new Executor(executable, stdout, stderr);
     }
 
+    @Nonnull
+    public static Executor executor(@Nonnull Path executable, @Nullable StdStreams streams) {
+        return executor(executable, streams != null ? streams.out() : null, streams != null ? streams.err() : null);
+    }
+
     public Executor(@Nonnull Path executable, @Nullable OutputStream stdout, @Nullable OutputStream stderr) {
         _stdout = stdout != null ? stdout : new ByteArrayOutputStream();
         _stderr = stderr != null ? stderr : _stdout;
@@ -173,7 +178,7 @@ public class Executor {
         return this;
     }
 
-    protected boolean containsProblem(@Nullable  String[] lines) {
+    protected boolean containsProblem(@Nullable String[] lines) {
         if (lines == null) {
             return false;
         }
@@ -235,7 +240,7 @@ public class Executor {
         if (!(_stdout instanceof ByteArrayOutputStream)) {
             throw new IllegalStateException("Not an ByteArrayOutputStream.");
         }
-        return ((ByteArrayOutputStream)_stdout).toByteArray();
+        return ((ByteArrayOutputStream) _stdout).toByteArray();
     }
 
     @Nonnull
@@ -251,7 +256,7 @@ public class Executor {
         if (!(_stderr instanceof ByteArrayOutputStream)) {
             throw new IllegalStateException("Not an ByteArrayOutputStream.");
         }
-        return ((ByteArrayOutputStream)_stderr).toByteArray();
+        return ((ByteArrayOutputStream) _stderr).toByteArray();
     }
 
     @Override

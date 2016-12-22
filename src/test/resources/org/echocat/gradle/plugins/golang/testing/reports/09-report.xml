@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<testsuites>
+    <testsuite tests="2" failures="0" time="0.16" name="package/name">
+        <properties>
+            <property name="coverage.statements.pct" value="13.37"/>
+        </properties>
+        <testcase classname="name" name="TestZ" time="0.06"/>
+        <testcase classname="name" name="TestA" time="0.1"/>
+    </testsuite>
+</testsuites>

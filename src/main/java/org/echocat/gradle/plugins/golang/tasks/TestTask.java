@@ -4,8 +4,15 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.plexus.util.DirectoryScanner;
 import org.echocat.gradle.plugins.golang.model.*;
+import org.echocat.gradle.plugins.golang.testing.CoverageReportOptimizer;
+import org.echocat.gradle.plugins.golang.testing.report.GolangTestOutputBasedReportObserver;
+import org.echocat.gradle.plugins.golang.testing.report.ReportObserver;
+import org.echocat.gradle.plugins.golang.testing.report.ReportObserver.Notifier;
+import org.echocat.gradle.plugins.golang.testing.report.ReportTransformer;
+import org.echocat.gradle.plugins.golang.testing.report.junit.TestSuites;
 import org.echocat.gradle.plugins.golang.utils.Executor;
 import org.echocat.gradle.plugins.golang.utils.Executor.ExecutionFailedExceptionProducer;
+import org.echocat.gradle.plugins.golang.utils.StdStreams;
 import org.gradle.internal.logging.progress.ProgressLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +35,9 @@ import static org.echocat.gradle.plugins.golang.model.GolangDependency.newDepend
 import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
 import static org.echocat.gradle.plugins.golang.utils.FileUtils.*;
 import static org.echocat.gradle.plugins.golang.utils.FileUtils.delete;
+import static org.echocat.gradle.plugins.golang.utils.IOUtils.closeQuietly;
+import static org.echocat.gradle.plugins.golang.utils.IOUtils.tee;
+import static org.echocat.gradle.plugins.golang.utils.StdStreams.Impl.stdStreams;
 import static org.gradle.api.internal.tasks.TaskExecutionOutcome.SKIPPED;
 
 public class TestTask extends GolangTaskSupport {
@@ -58,12 +68,13 @@ public class TestTask extends GolangTaskSupport {
 
     @Override
     public void run() throws Exception {
+        final CoverageReportOptimizer coverageReportOptimizer = new CoverageReportOptimizer(this);
         final TestingSettings testing = getTesting();
         if (Boolean.TRUE.equals(testing.getSkip()) || "true".equalsIgnoreCase(System.getProperty("skipTests"))) {
             getState().setOutcome(SKIPPED);
             return;
         }
-        final Path coverProfile = preHandlePackagesCover();
+        final Path coverProfile = coverageReportOptimizer.preHandlePackagesCover();
 
         final Set<GolangDependency> packages = selectPackages();
         if (packages.isEmpty()) {
@@ -77,15 +88,23 @@ public class TestTask extends GolangTaskSupport {
         );
 
         final ProgressLogger progress = startProgress("Run tests");
+        final ObserverNotifier notifier = new ObserverNotifier(progress);
 
         boolean success = true;
-        for (final GolangDependency targetPackage : packages) {
-            if (!executeTestsFor(targetPackage, coverProfile, progress)) {
-                success = false;
+        try (final ReportObserver observer = observerFor(getGolang().getPackageName(), notifier)) {
+            try (final StdStreams streams = wrapIfRequired(observer)) {
+                for (final GolangDependency targetPackage : packages) {
+                    notifier.packageName(targetPackage.getGroup());
+                    progress.progress("Run " + targetPackage + "...");
+                    if (!executeTestsFor(targetPackage, coverProfile, streams)) {
+                        success = false;
+                    }
+                }
             }
+            coverageReportOptimizer.postHandlePackagesCover(coverProfile, progress);
+            observer.close();
+            storeAsJunitReportIfRequired(observer);
         }
-
-        postHandlePackagesCover(coverProfile, progress);
 
         progress.completed();
         if (!success) {
@@ -93,36 +112,41 @@ public class TestTask extends GolangTaskSupport {
         }
     }
 
-    @Nullable
-    protected Path preHandlePackagesCover() throws IOException {
-        final TestingSettings testing = getTesting();
-        Path coverProfile = testing.getCoverProfileFile();
-        if (coverProfile != null && exists(coverProfile)) {
-            delete(coverProfile);
+    @Nonnull
+    protected StdStreams wrapIfRequired(@Nonnull ReportObserver observer) throws IOException {
+        final Path logPath = getTesting().getLogPath();
+        if (logPath == null) {
+            return observer;
         }
-        final Path coverProfileHtml = testing.getCoverProfileHtmlFile();
-        if (coverProfileHtml != null && coverProfile == null) {
-            final Path testingDir = getProject().getBuildDir().toPath().resolve("testing");
-            createDirectoriesIfRequired(testingDir);
-            coverProfile = createTempFile(testingDir, getProject().getName() + ".", ".cover");
-        }
-        return coverProfile;
-    }
-
-    protected void postHandlePackagesCover(@Nullable Path coverProfile, @Nonnull ProgressLogger progress) throws Exception {
-        progress.progress("Post process of covering profiles...");
-        final TestingSettings testing = getTesting();
-        final Path coverProfileHtml = testing.getCoverProfileHtmlFile();
-        if (coverProfileHtml != null && coverProfile != null && exists(coverProfile)) {
-            coverToHtml(coverProfile, coverProfileHtml);
-            if (testing.getCoverProfileFile() == null) {
-                deleteQuietly(coverProfile);
+        ensureParentOf(logPath);
+        final OutputStream logOutputStream = newOutputStream(logPath);
+        boolean success = false;
+        try {
+            final StdStreams logStreams = stdStreams(logOutputStream);
+            final StdStreams result = tee(observer, logStreams);
+            success = true;
+            return result;
+        } finally {
+            if (!success) {
+                closeQuietly(logOutputStream);
             }
         }
     }
 
-    protected boolean executeTestsFor(@Nonnull GolangDependency aPackage, @Nullable Path coverProfile, @Nonnull ProgressLogger progress) throws Exception {
-        progress.progress("Testing " + aPackage + "...");
+    protected void storeAsJunitReportIfRequired(@Nonnull ReportObserver observer) throws IOException {
+        final Path path = getTesting().getJunitReportPath();
+        if (path != null) {
+            final TestSuites junitReport = new ReportTransformer().transformToJunit(observer.getReport());
+            ensureParentOf(path);
+            try (final OutputStream os = newOutputStream(path)) {
+                try (final Writer writer = new OutputStreamWriter(os, "UTF-8")) {
+                    junitReport.marshall(writer);
+                }
+            }
+        }
+    }
+
+    protected boolean executeTestsFor(@Nonnull GolangDependency aPackage, @Nullable Path coverProfile, @Nonnull StdStreams streams) throws Exception {
         LOGGER.info("Testing {}...", aPackage);
 
         final GolangSettings settings = getGolang();
@@ -132,7 +156,9 @@ public class TestTask extends GolangTaskSupport {
 
         final Platform platform = settings.getHostPlatform();
 
-        final Executor executor = executor(toolchain.getGoBinary())
+        final Path junitReportPath = testing.getJunitReportPath();
+
+        final Executor executor = executor(toolchain.getGoBinary(), streams)
             .workingDirectory(build.getFirstGopath())
             .env("GOPATH", build.getGopathAsString())
             .env("GOROOT", toolchain.getGoroot())
@@ -140,7 +166,7 @@ public class TestTask extends GolangTaskSupport {
             .env("GOARCH", platform.getArchitecture().getNameInGo())
             .env("CGO_ENABLED", TRUE.equals(toolchain.getCgoEnabled()) ? "1" : "0");
 
-        executor.argument("test");
+        executor.arguments("test", "-v");
         executor.arguments((Object[])testing.getArguments());
 
         final Path packageCoverProfile;
@@ -194,18 +220,11 @@ public class TestTask extends GolangTaskSupport {
         return success;
     }
 
-    protected void coverToHtml(@Nonnull Path profile, @Nonnull Path output) throws Exception {
-        final BuildSettings build = getBuild();
-        final ToolchainSettings toolchain = getToolchain();
-
-        executor(toolchain.getGoBinary())
-            .workingDirectory(build.getFirstGopath())
-            .env("GOPATH", build.getGopathAsString())
-            .env("GOROOT", toolchain.getGoroot())
-            .arguments("tool", "cover")
-            .arguments("-html", profile)
-            .arguments("-o", output)
-            .execute();
+    @Nonnull
+    protected ReportObserver observerFor(@Nonnull String packageName, ObserverNotifier notifier) {
+        final ReportObserver result = new GolangTestOutputBasedReportObserver(packageName);
+        result.registerNotifier(notifier);
+        return result;
     }
 
     @Nonnull
@@ -260,6 +279,26 @@ public class TestTask extends GolangTaskSupport {
             }
         }
         return result;
+    }
+
+    protected static class ObserverNotifier implements Notifier {
+
+        @Nonnull
+        private final ProgressLogger _progressLogger;
+        private String _packageName;
+
+        public ObserverNotifier(@Nonnull ProgressLogger progressLogger) {
+            _progressLogger = progressLogger;
+        }
+
+        @Override
+        public void onTestStarted(@Nonnull String name) {
+            _progressLogger.progress("Run " + _packageName + "::" + name + "...");
+        }
+
+        public void packageName(@Nonnull String packageName) {
+            _packageName = packageName;
+        }
     }
 
 }

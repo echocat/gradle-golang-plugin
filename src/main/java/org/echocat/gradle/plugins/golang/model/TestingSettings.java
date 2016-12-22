@@ -31,6 +31,22 @@ public class TestingSettings {
      */
     private String _coverProfileHtml;
 
+    /**
+     * If set to an non <code>null</code> value the test output will
+     * will be stored in the specified file location.
+     *
+     * Default is: ${buildDir}/testing/test.log
+     */
+    private String _log;
+
+    /**
+     * If set to an non <code>null</code> value the test output will
+     * transformed into a junit report and will be written to this file location.
+     *
+     * Default is: ${buildDir}/testing/junit_report.xml
+     */
+    private String _junitReport;
+
     @Inject
     public TestingSettings(boolean initialize, @Nonnull Project project) {
         _project = project;
@@ -41,6 +57,8 @@ public class TestingSettings {
             _excludes = new String[]{
                 ".git/**", ".svn/**", "build.gradle", "build/**", ".gradle/**", "gradle/**", "vendor/**"
             };
+            _log = project.getBuildDir() + "/testing/test.log";
+            _junitReport = project.getBuildDir() + "/testing/junit_report.xml";
         }
     }
 
@@ -107,6 +125,32 @@ public class TestingSettings {
 
     public Path getCoverProfileHtmlFile() {
         final String plain = _coverProfileHtml;
+        return plain != null ? Paths.get(plain) : null;
+    }
+
+    public String getLog() {
+        return _log;
+    }
+
+    public void setLog(String log) {
+        _log = log;
+    }
+
+    public Path getLogPath() {
+        final String plain = _log;
+        return plain != null ? Paths.get(plain) : null;
+    }
+
+    public String getJunitReport() {
+        return _junitReport;
+    }
+
+    public void setJunitReport(String junitReport) {
+        _junitReport = junitReport;
+    }
+
+    public Path getJunitReportPath() {
+        final String plain = _junitReport;
         return plain != null ? Paths.get(plain) : null;
     }
 

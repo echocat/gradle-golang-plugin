@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<testsuites>
+    <testsuite tests="2" failures="0" time="0.16" name="package/name1">
+        <testcase classname="name1" name="TestOne" time="0.06"/>
+        <testcase classname="name1" name="TestTwo" time="0.1"/>
+    </testsuite>
+    <testsuite tests="2" failures="1" time="0.151" name="package/name2">
+        <testcase classname="name2" name="TestOne" time="0.02">
+            <failure message="Failed" type="">file_test.go:11: Error message
+file_test.go:11: Longer
+	error
+	message.</failure>
+        </testcase>
+        <testcase classname="name2" name="TestTwo" time="0.13"/>
+    </testsuite>
+</testsuites>

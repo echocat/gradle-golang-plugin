@@ -205,6 +205,22 @@ golang {
 
         // Optional arguments to pass to the go test itself
         testArguments = [] // []String
+
+        // Write a coverage profile to the file after all tests have passed.
+        // Force call "go test" with "-cover" flag.
+        coverProfile = null // String
+
+        // Write a coverage profile as HTML to the file after all tests have passed.
+        // Force call "go test" with "-cover" flag.
+        coverProfileHtml = null // String
+
+        // Will write the test output in the specified file.
+        // If set to null this file will not be written.
+        log = "${buildDir}/testing/test.log" // String
+
+        // Will write the test output in JUnit report format in the specified file.
+        // If set to null this file will not be written.
+        junitReport = "${buildDir}/testing/junit_report.xml" // String
     }
     
     toolchain {

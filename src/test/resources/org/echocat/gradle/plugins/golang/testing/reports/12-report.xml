@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<testsuites>
+    <testsuite tests="18" failures="3" time="0.05" name="package/name">
+        <testcase classname="name" name="TestOne" time="0.01">
+            <system-out>Output from TestOne
+</system-out>
+        </testcase>
+        <testcase classname="name" name="TestOne/Child" time="0.02">
+            <system-out>Output from TestOne/Child
+</system-out>
+        </testcase>
+        <testcase classname="name" name="TestOne/Child#01" time="0.03">
+            <system-out>Output from TestOne/Child#01
+</system-out>
+        </testcase>
+        <testcase classname="name" name="TestOne/Child=02" time="0.04">
+            <system-out>Output from TestOne/Child=02
+</system-out>
+        </testcase>
+        <testcase classname="name" name="TestTwo" time="0.01"/>
+        <testcase classname="name" name="TestTwo/Child" time="0.02"/>
+        <testcase classname="name" name="TestTwo/Child#01" time="0.03"/>
+        <testcase classname="name" name="TestTwo/Child=02" time="0.04"/>
+        <testcase classname="name" name="TestThree" time="0.01"/>
+        <testcase classname="name" name="TestThree/a#1" time="0.02"/>
+        <testcase classname="name" name="TestThree/a#1/b#1" time="0.03"/>
+        <testcase classname="name" name="TestThree/a#1/b#1/c#1" time="0.04"/>
+        <testcase classname="name" name="TestFour" time="0.02">
+            <failure message="Failed" type=""/>
+        </testcase>
+        <testcase classname="name" name="TestFour/#00" time="0.0">
+            <failure message="Failed" type="">example.go:12: Expected abc  OBTAINED:
+	xyz
+example.go:123: Expected and obtained are different.</failure>
+        </testcase>
+        <testcase classname="name" name="TestFour/#01" time="0.0">
+            <skipped message="example.go:1234: Not supported yet."/>
+        </testcase>
+        <testcase classname="name" name="TestFour/#02" time="0.0"/>
+        <testcase classname="name" name="TestFive" time="0.0">
+            <skipped message="example.go:1392: Not supported yet."/>
+        </testcase>
+        <testcase classname="name" name="TestSix" time="0.0">
+            <failure message="Failed" type="">example.go:371: This should not fail!</failure>
+        </testcase>
+    </testsuite>
+</testsuites>

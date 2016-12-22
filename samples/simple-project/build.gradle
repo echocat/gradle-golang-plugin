@@ -1,10 +1,23 @@
 import org.echocat.gradle.plugins.golang.tasks.GolangTask
 import org.echocat.gradle.plugins.golang.utils.Executor
-import org.slf4j.LoggerFactory
+import org.slf4j.*
 
-plugins {
-  id "org.echocat.golang" version "0.1.11"
+apply plugin: 'org.echocat.golang'
+
+buildscript {
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
+    dependencies {
+        classpath "org.echocat.gradle.plugins:gradle-golang-plugin:0.1.14-SNAPSHOT"
+    }
 }
+
+
+/*plugins {
+  id "org.echocat.golang" version "0.1.14"
+}*/
 
 group 'github.com/echocat/gradle-golang-plugin/samples/simple-project'
 version '0.1.1'
@@ -15,23 +28,15 @@ golang {
         useTemporaryGopath = true
         definitions = [
                 "${group}/bar.artifactId": "${group}:${name}:${version}",
-                "main.artifactId": name,
-                "main.version": version,
-                "main.groupId": group,
+                "main.artifactId"        : name,
+                "main.version"           : version,
+                "main.groupId"           : group,
         ]
     }
     dependencies {
-        build 'github.com/eknkc/dateformat:master'
-        build 'github.com/emicklei/go-restful'
-        build 'github.com/russross/blackfriday'
-        build 'github.com/tdewolff/minify'
-        build 'github.com/codegangsta/cli'
-        build 'gopkg.in/blaubaer/yaml.v66'
-        build 'gopkg.in/natefinch/lumberjack.v2'
-        build 'gopkg.in/robfig/cron.v2'
-        build 'gopkg.in/jmcvetta/napping.v3'
         test 'gopkg.in/check.v1'
-        tool 'github.com/mattn/goveralls'
+        tool 'github.com/golang/lint/golint'
+        tool 'github.com/jstemmer/go-junit-report'
     }
     testing {
         coverProfile = "${buildDir}/testing/${name}.cover"
@@ -46,7 +51,6 @@ class MooTask extends GolangTask {
 
     private static final Logger LOG = LoggerFactory.getLogger(MooTask.class)
 
-    @Override
     void run() throws Exception {
         Executor.executor(toolchain.goBinary, LOG)
             .arguments("version")

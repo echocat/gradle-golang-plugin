@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<testsuites>
+    <testsuite tests="2" failures="0" time="0.44" name="github.com/dmitris/test-go-junit-report">
+        <testcase classname="test-go-junit-report" name="TestDoFoo" time="0.27"/>
+        <testcase classname="test-go-junit-report" name="TestDoFoo2" time="0.16"/>
+    </testsuite>
+</testsuites>

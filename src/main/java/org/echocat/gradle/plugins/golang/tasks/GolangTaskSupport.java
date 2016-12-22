@@ -3,6 +3,8 @@ package org.echocat.gradle.plugins.golang.tasks;
 import groovy.lang.Closure;
 import org.echocat.gradle.plugins.golang.DependencyHandler;
 import org.echocat.gradle.plugins.golang.model.*;
+import org.echocat.gradle.plugins.golang.utils.ProjectEnabled;
+import org.echocat.gradle.plugins.golang.utils.SettingsEnabled;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
@@ -12,7 +14,7 @@ import org.gradle.internal.logging.progress.ProgressLoggerFactory;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public abstract class GolangTaskSupport extends DefaultTask {
+public abstract class GolangTaskSupport extends DefaultTask implements SettingsEnabled, ProjectEnabled {
 
     @Nonnull
     private final Settings _globalSettings;
@@ -42,6 +44,7 @@ public abstract class GolangTaskSupport extends DefaultTask {
         return _taskSettings;
     }
 
+    @Override
     @Nonnull
     public Settings getSettings() {
         final Settings result = _mergedSettings;
@@ -110,6 +113,7 @@ public abstract class GolangTaskSupport extends DefaultTask {
         return new DependencyHandler(getServices(), getSettings());
     }
 
+    @SuppressWarnings("NoopMethodInAbstractClass")
     public void run() throws Exception {}
 
     @Nullable
