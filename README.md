@@ -30,7 +30,7 @@ go sdk, set the right environment variables, download dependencies, ...
 * Choice to build in the default system ``GOPATH`` or in a temporary one to do not influence your build result 
 * Test target package and all used packages of your code
 * Create test coverage report (one report for all packages)
-
+* Create JUnit Report files for better interoperability with continues integration systems etc.
 
 ... and the best: Gradle already provides you a lot of other great plugins to help you managing your project like:
 
