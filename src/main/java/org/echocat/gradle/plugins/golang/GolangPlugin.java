@@ -14,13 +14,13 @@ public class GolangPlugin implements Plugin<Project> {
     @Override
     public void apply(Project project) {
         final ConfigurationContainer configurations = project.getConfigurations();
-        configurations.maybeCreate("test");
-        configurations.maybeCreate("build");
+        configurations.maybeCreate("testGolang");
+        configurations.maybeCreate("buildGolang");
         configurations.maybeCreate("tool");
 
         final ExtensionContainer extensions = project.getExtensions();
         final ExtensionAware golang = (ExtensionAware) extensions.create("golang", GolangSettings.class, true, project);
-        golang.getExtensions().create("build", BuildSettings.class, true, project);
+        golang.getExtensions().create("buildGolang", BuildSettings.class, true, project);
         golang.getExtensions().create("toolchain", ToolchainSettings.class, true, project);
         golang.getExtensions().create("dependencies", DependenciesSettings.class, true, project);
         golang.getExtensions().create("testing", TestingSettings.class, true, project);
@@ -35,9 +35,9 @@ public class GolangPlugin implements Plugin<Project> {
         tasks.replace("basePrepareSources", BasePrepareSources.class);
         tasks.replace("getTools", GetTools.class);
         tasks.replace("baseGetTools", BaseGetTools.class);
-        tasks.replace("test", Test.class);
+        tasks.replace("testGolang", Test.class);
         tasks.replace("baseTest", BaseTest.class);
-        tasks.replace("build", Build.class);
+        tasks.replace("buildGolang", Build.class);
         tasks.replace("baseBuild", BaseBuild.class);
     }
 

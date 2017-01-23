@@ -82,8 +82,8 @@ public class TestTask extends GolangTaskSupport {
             return;
         }
 
-        getDependencyHandler().get(by("test")
-            .withAdditionalConfigurations("build")
+        getDependencyHandler().get(by("testGolang")
+            .withAdditionalConfigurations("buildGolang")
             .withAdditionalRequiredPackages(packages)
         );
 
@@ -147,7 +147,7 @@ public class TestTask extends GolangTaskSupport {
     }
 
     protected boolean executeTestsFor(@Nonnull GolangDependency aPackage, @Nullable Path coverProfile, @Nonnull StdStreams streams) throws Exception {
-        LOGGER.info("Testing {}...", aPackage);
+        LOGGER.info("TestingGolang {}...", aPackage);
 
         final GolangSettings settings = getGolang();
         final BuildSettings build = getBuild();
@@ -166,12 +166,12 @@ public class TestTask extends GolangTaskSupport {
             .env("GOARCH", platform.getArchitecture().getNameInGo())
             .env("CGO_ENABLED", TRUE.equals(toolchain.getCgoEnabled()) ? "1" : "0");
 
-        executor.arguments("test", "-v");
+        executor.arguments("testGolang", "-v");
         executor.arguments((Object[])testing.getArguments());
 
         final Path packageCoverProfile;
         if (coverProfile != null) {
-            final Path testingDir = getProject().getBuildDir().toPath().resolve("testing");
+            final Path testingDir = getProject().getBuildDir().toPath().resolve("testingGolang");
             createDirectoriesIfRequired(testingDir);
             packageCoverProfile = createTempFile(testingDir, getProject().getName() + ".", ".cover");
             executor.arguments("-coverprofile", packageCoverProfile);
@@ -302,4 +302,3 @@ public class TestTask extends GolangTaskSupport {
     }
 
 }
-

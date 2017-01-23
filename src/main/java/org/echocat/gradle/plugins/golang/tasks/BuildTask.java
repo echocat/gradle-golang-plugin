@@ -48,11 +48,11 @@ public class BuildTask extends GolangTaskSupport {
             .setType(Type.source)
             .setLocation(selectPackageLocation(packageName));
 
-        getDependencyHandler().get(by("build")
+        getDependencyHandler().get(by("buildGolang")
             .withAdditionalRequiredPackages(targetPackage)
         );
 
-        final ProgressLogger progress = startProgress("Build");
+        final ProgressLogger progress = startProgress("BuildGolang");
 
         for (final Platform platform : getGolang().getParsedPlatforms()) {
             executeFor(platform, targetPackage, progress);
@@ -88,7 +88,7 @@ public class BuildTask extends GolangTaskSupport {
             .env("GOARCH", platform.getArchitecture().getNameInGo())
             .env("CGO_ENABLED", TRUE.equals(toolchain.getCgoEnabled()) ? "1" : "0");
 
-        executor.arguments("build");
+        executor.arguments("buildGolang");
         executor.arguments("-o", outputFilename);
         executor.arguments(build.getResolvedArguments());
         executor.argument(targetPackage.getGroup());
@@ -102,8 +102,7 @@ public class BuildTask extends GolangTaskSupport {
             }
         }
         //noinspection UseOfSystemOutOrSystemErr
-        System.out.println(outputFilename + " build.");
+        System.out.println(outputFilename + " buildGolang.");
     }
 
 }
-
