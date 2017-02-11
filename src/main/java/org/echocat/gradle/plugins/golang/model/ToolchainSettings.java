@@ -101,6 +101,7 @@ public class ToolchainSettings {
         final String stdout;
         try {
             stdout = executor(goBinary)
+                .env("GOROOT", goBinary.getParent().toAbsolutePath().toString())
                 .argument("version")
                 .execute()
                 .getStdoutAsString()
