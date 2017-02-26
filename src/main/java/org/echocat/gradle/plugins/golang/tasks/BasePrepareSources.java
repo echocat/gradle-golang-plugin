@@ -13,7 +13,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 
-import static java.lang.Boolean.TRUE;
+import static java.lang.Boolean.FALSE;
 import static java.nio.file.Files.*;
 import static org.echocat.gradle.plugins.golang.model.OperatingSystem.WINDOWS;
 import static org.echocat.gradle.plugins.golang.model.OperatingSystem.currentOperatingSystem;
@@ -41,7 +41,7 @@ public class BasePrepareSources extends GolangTaskSupport {
         final GolangSettings settings = getGolang();
         final BuildSettings build = getBuild();
         boolean atLeastOneCopied = false;
-        if (TRUE.equals(build.getUseTemporaryGopath())) {
+        if (!FALSE.equals(build.getUseTemporaryGopath())) {
             final Path gopath = build.getFirstGopath();
             progress.progress("Prepare GOPATH " + gopath + "...");
             LOGGER.info("Prepare GOPATH ({})...", gopath);

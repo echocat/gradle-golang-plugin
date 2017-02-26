@@ -114,7 +114,7 @@ public class TestTask extends GolangTaskSupport {
 
     @Nonnull
     protected StdStreams wrapIfRequired(@Nonnull ReportObserver observer) throws IOException {
-        final Path logPath = getTesting().getLogPath();
+        final Path logPath = getTesting().getLog();
         if (logPath == null) {
             return observer;
         }
@@ -134,7 +134,7 @@ public class TestTask extends GolangTaskSupport {
     }
 
     protected void storeAsJunitReportIfRequired(@Nonnull ReportObserver observer) throws IOException {
-        final Path path = getTesting().getJunitReportPath();
+        final Path path = getTesting().getJunitReport();
         if (path != null) {
             final TestSuites junitReport = new ReportTransformer().transformToJunit(observer.getReport());
             ensureParentOf(path);
@@ -156,11 +156,11 @@ public class TestTask extends GolangTaskSupport {
 
         final Platform platform = settings.getHostPlatform();
 
-        final Path junitReportPath = testing.getJunitReportPath();
+        final Path junitReportPath = testing.getJunitReport();
 
         final Executor executor = executor(toolchain.getGoBinary(), streams)
             .workingDirectory(build.getFirstGopath())
-            .env("GOPATH", build.getGopathAsString())
+            .env("GOPATH", build.getGopath())
             .env("GOROOT", toolchain.getGoroot())
             .env("GOOS", platform.getOperatingSystem().getNameInGo())
             .env("GOARCH", platform.getArchitecture().getNameInGo())

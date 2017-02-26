@@ -5,10 +5,12 @@ import org.gradle.api.Project;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+
+import static org.echocat.gradle.plugins.golang.utils.FileUtils.toPath;
 
 public class TestingSettings {
 
+    @SuppressWarnings({"FieldCanBeLocal", "unused"})
     @Nonnull
     private final Project _project;
 
@@ -24,12 +26,12 @@ public class TestingSettings {
      * Write a coverage profile to the file after all tests have passed.
      * Sets -cover.
      */
-    private String _coverProfile;
+    private Path _coverProfile;
     /**
      * Write a coverage profile as HTML to the file after all tests have passed.
      * Sets -cover.
      */
-    private String _coverProfileHtml;
+    private Path _coverProfileHtml;
 
     /**
      * If set to an non <code>null</code> value the test output will
@@ -37,7 +39,7 @@ public class TestingSettings {
      *
      * Default is: ${buildDir}/testing/test.log
      */
-    private String _log;
+    private Path _log;
 
     /**
      * If set to an non <code>null</code> value the test output will
@@ -45,20 +47,20 @@ public class TestingSettings {
      *
      * Default is: ${buildDir}/testing/junit_report.xml
      */
-    private String _junitReport;
+    private Path _junitReport;
 
     @Inject
     public TestingSettings(boolean initialize, @Nonnull Project project) {
         _project = project;
         if (initialize) {
-            _includes = new String[] {
+            _includes = new String[]{
                 "**/*_test.go"
             };
             _excludes = new String[]{
                 ".git/**", ".svn/**", "build.gradle", "build/**", ".gradle/**", "gradle/**", "vendor/**"
             };
-            _log = project.getBuildDir() + "/testing/test.log";
-            _junitReport = project.getBuildDir() + "/testing/junit_report.xml";
+            _log = project.getBuildDir().toPath().resolve("testing").resolve("test.log");
+            _junitReport = project.getBuildDir().toPath().resolve("testing").resolve("junit_report.xml");
         }
     }
 
@@ -102,56 +104,52 @@ public class TestingSettings {
         _testArguments = testArguments;
     }
 
-    public String getCoverProfile() {
+    public Path getCoverProfile() {
         return _coverProfile;
     }
 
-    public void setCoverProfile(String coverProfile) {
+    public void setCoverProfile(Path coverProfile) {
         _coverProfile = coverProfile;
     }
 
-    public Path getCoverProfileFile() {
-        final String plain = _coverProfile;
-        return plain != null ? Paths.get(plain) : null;
+    public void setCoverProfile(String coverProfile) {
+        setCoverProfile(toPath(coverProfile));
     }
 
-    public String getCoverProfileHtml() {
+    public Path getCoverProfileHtml() {
         return _coverProfileHtml;
     }
 
-    public void setCoverProfileHtml(String coverProfileHtml) {
+    public void setCoverProfileHtml(Path coverProfileHtml) {
         _coverProfileHtml = coverProfileHtml;
     }
 
-    public Path getCoverProfileHtmlFile() {
-        final String plain = _coverProfileHtml;
-        return plain != null ? Paths.get(plain) : null;
+    public void setCoverProfileHtml(String coverProfileHtml) {
+        setCoverProfileHtml(toPath(coverProfileHtml));
     }
 
-    public String getLog() {
+    public Path getLog() {
         return _log;
     }
 
-    public void setLog(String log) {
+    public void setLog(Path log) {
         _log = log;
     }
 
-    public Path getLogPath() {
-        final String plain = _log;
-        return plain != null ? Paths.get(plain) : null;
+    public void setLog(String log) {
+        setLog(toPath(log));
     }
 
-    public String getJunitReport() {
+    public Path getJunitReport() {
         return _junitReport;
     }
 
-    public void setJunitReport(String junitReport) {
+    public void setJunitReport(Path junitReport) {
         _junitReport = junitReport;
     }
 
-    public Path getJunitReportPath() {
-        final String plain = _junitReport;
-        return plain != null ? Paths.get(plain) : null;
+    public void setJunitReport(String junitReport) {
+        setJunitReport(toPath(junitReport));
     }
 
     public String[] getArguments() {

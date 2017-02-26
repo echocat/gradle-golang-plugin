@@ -1,18 +1,19 @@
 package org.echocat.gradle.plugins.golang.tasks;
 
-import org.echocat.gradle.plugins.golang.model.*;
+import org.echocat.gradle.plugins.golang.model.BuildSettings;
+import org.echocat.gradle.plugins.golang.model.GolangSettings;
+import org.echocat.gradle.plugins.golang.model.Settings;
+import org.echocat.gradle.plugins.golang.model.ToolchainSettings;
 import org.gradle.internal.logging.progress.ProgressLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 
-import static java.lang.Boolean.TRUE;
+import static java.lang.Boolean.FALSE;
 import static java.nio.file.Files.isExecutable;
 import static org.apache.commons.lang3.StringUtils.*;
-import static org.echocat.gradle.plugins.golang.model.Platform.currentPlatform;
 
 public class BaseValidate extends GolangTaskSupport {
 
@@ -43,12 +44,6 @@ public class BaseValidate extends GolangTaskSupport {
             }
         }
 
-        final List<Platform> platforms = golang.getParsedPlatforms();
-
-        progress.progress("Configure host platform...");
-        final Platform hostPlatform = currentPlatform();
-        golang.setHostPlatform(hostPlatform);
-
         progress.progress("Configure GOROOT...");
         configureGorootIfNeeded();
         progress.progress("Configure GOROOT_BOOTSTRAP...");
@@ -59,12 +54,12 @@ public class BaseValidate extends GolangTaskSupport {
         progress.completed();
 
         LOGGER.info("Package:          {}", golang.getPackageName());
-        LOGGER.info("Platforms:        {}", join(platforms, ", "));
-        LOGGER.info("Host:             {}", hostPlatform);
+        LOGGER.info("Platforms:        {}", join(golang.getPlatforms(), ", "));
+        LOGGER.info("Host:             {}", golang.getHostPlatform());
         LOGGER.info("Go version:       {}", toolchain.getGoversion());
         LOGGER.info("GOROOT:           {}", toolchain.getGoroot());
         LOGGER.info("GOROOT_BOOTSTRAP: {}", toolchain.getBootstrapGoroot());
-        LOGGER.info("GOPATH:           {}", build.getGopathAsString());
+        LOGGER.info("GOPATH:           {}", build.getGopath());
     }
 
     protected void configureGorootIfNeeded() {
@@ -85,9 +80,10 @@ public class BaseValidate extends GolangTaskSupport {
         if (bootstrapGoroot == null) {
             final String gorootEnv = System.getenv("GOROOT");
             if (isNotEmpty(gorootEnv)) {
-                final Path goBinary = Paths.get(gorootEnv).resolve("bin").resolve("go" + toolchain.getExecutableSuffix());
+                final Path gorootPath = Paths.get(gorootEnv);
+                final Path goBinary = gorootPath.resolve("bin").resolve("go" + toolchain.getExecutableSuffix());
                 if (isExecutable(goBinary)) {
-                    toolchain.setBootstrapGoroot(Paths.get(gorootEnv));
+                    toolchain.setBootstrapGoroot(gorootPath);
                     return;
                 }
             }
@@ -97,7 +93,7 @@ public class BaseValidate extends GolangTaskSupport {
 
     protected void configureGopathIfNeeded() {
         final BuildSettings build = getGlobalSettings().getBuild();
-        if (TRUE.equals(build.getUseTemporaryGopath())) {
+        if (!FALSE.equals(build.getUseTemporaryGopath())) {
             build.setGopath(getProject().getBuildDir().toPath().resolve("gopath"));
         }
     }

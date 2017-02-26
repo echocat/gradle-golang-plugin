@@ -8,21 +8,22 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.Map.Entry;
 
-import static java.io.File.*;
+import static java.io.File.pathSeparator;
+import static java.io.File.separator;
 import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Files.notExists;
-import static java.util.Collections.singletonList;
-import static org.apache.commons.lang3.StringUtils.*;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 public class BuildSettings {
 
+    @SuppressWarnings({"FieldCanBeLocal", "unused"})
     @Nonnull
     private final Project _project;
-    private List<Path> _gopath;
+
+    private Paths _gopath;
     private Boolean _useTemporaryGopath;
     private String[] _includes;
     private String[] _excludes;
@@ -38,7 +39,7 @@ public class BuildSettings {
             if (isNotEmpty(gopath)) {
                 setGopath(gopath);
             } else {
-                final Path tempGopath = Paths.get(System.getProperty("java.io.tmpdir", "tmp")).resolve("gopath");
+                final Path tempGopath = java.nio.file.Paths.get(System.getProperty("java.io.tmpdir", "tmp")).resolve("gopath");
                 if (notExists(tempGopath)) {
                     try {
                         createDirectories(tempGopath);
@@ -56,56 +57,60 @@ public class BuildSettings {
     }
 
     @Nullable
-    public List<Path> getGopath() {
+    public Paths getGopath() {
         return _gopath;
+    }
+
+    /**
+     * @return the full gopath as string
+     * @deprecated Use {@link #getGopath()}.{@link Paths#toString() toString()} instead.
+     */
+    @Deprecated
+    public String getGopathAsString() {
+        final Paths gopath = getGopath();
+        if (gopath == null) {
+            throw new NullPointerException("null for gopath set.");
+        }
+        return gopath.toString();
     }
 
     @Nonnull
     public Path getFirstGopath() {
-        final List<Path> gopath = getGopath();
+        final Paths gopath = getGopath();
         if (gopath == null) {
             throw new NullPointerException("null for gopath set.");
         }
-        final Iterator<Path> i = gopath.iterator();
-        if (!i.hasNext()) {
+        final Path firstElement = gopath.firstElement();
+        if (firstElement == null) {
             throw new NullPointerException("empty for gopath set.");
         }
-        return i.next();
+        return firstElement;
     }
 
-    public String getGopathAsString() {
-        return join(getGopath(), pathSeparatorChar);
-    }
-
-    public void setGopath(List<Path> gopath) {
+    public void setGopath(Paths gopath) {
         if (gopath == null) {
             throw new NullPointerException("null for gopath provided.");
         }
         if (gopath.isEmpty()) {
-            throw new IllegalArgumentException("empty gopath provided.");
+            throw new NullPointerException("empty gopath provided.");
         }
         _gopath = gopath;
     }
 
+    public void setGopath(Iterable<Path> gopath) {
+        setGopath(gopath != null ? new Paths(gopath) : null);
+    }
+
     public void setGopath(Path gopath) {
-        if (gopath == null) {
-            throw new NullPointerException("null for gopath provided.");
-        }
-        setGopath(singletonList(gopath));
+        setGopath(gopath != null ? new Paths(gopath) : null);
+    }
+
+    public void setGopath(Path... gopath) {
+        setGopath(gopath != null ? new Paths(gopath) : null);
     }
 
     public void setGopath(String gopath) {
-        if (gopath == null) {
-            throw new NullPointerException("null for gopath provided.");
-        }
-        final List<Path> paths = new ArrayList<>();
-        for (final String plainPath : split(gopath, pathSeparatorChar)) {
-            final String trimmedPlainPath = plainPath.trim();
-            if (isNotEmpty(gopath)) {
-                paths.add(Paths.get(trimmedPlainPath).toAbsolutePath());
-            }
-        }
-        setGopath(paths);
+        setGopath(gopath != null ? new Paths(gopath) : null);
     }
 
     public Boolean getUseTemporaryGopath() {
@@ -158,7 +163,7 @@ public class BuildSettings {
 
     @Nonnull
     public Path outputFilenameFor(@Nonnull Platform platform) {
-        return Paths.get(replacePlaceholdersFor(platform, getOutputFilenamePattern()));
+        return java.nio.file.Paths.get(replacePlaceholdersFor(platform, getOutputFilenamePattern()));
     }
 
     @Nonnull
@@ -205,15 +210,15 @@ public class BuildSettings {
     }
 
     @Nonnull
-    public List<Path> getGopathSourceRoot() {
-        final List<Path> originals = getGopath();
+    public Paths getGopathSourceRoot() {
+        final Paths originals = getGopath();
         final List<Path> results = new ArrayList<>(originals != null ? originals.size() : 0);
         if (originals != null) {
             for (final Path original : originals) {
                 results.add(original.resolve("src"));
             }
         }
-        return results;
+        return new Paths(results);
     }
 
     @Nonnull

@@ -1,7 +1,7 @@
 import org.echocat.gradle.plugins.golang.tasks.GolangTask
 import org.echocat.gradle.plugins.golang.utils.Executor
 import org.slf4j.*
-
+/*
 apply plugin: 'org.echocat.golang'
 
 buildscript {
@@ -10,14 +10,14 @@ buildscript {
         mavenLocal()
     }
     dependencies {
-        classpath "org.echocat.gradle.plugins:gradle-golang-plugin:0.1.14-SNAPSHOT"
+        classpath "org.echocat.gradle.plugins:gradle-golang-plugin:0.1.15-SNAPSHOT"
     }
 }
+*/
 
-
-/*plugins {
+plugins {
   id "org.echocat.golang" version "0.1.14"
-}*/
+}
 
 group 'github.com/echocat/gradle-golang-plugin/samples/simple-project'
 version '0.1.1'
@@ -25,7 +25,6 @@ version '0.1.1'
 
 golang {
     build {
-        useTemporaryGopath = true
         definitions = [
                 "${group}/bar.artifactId": "${group}:${name}:${version}",
                 "main.artifactId"        : name,

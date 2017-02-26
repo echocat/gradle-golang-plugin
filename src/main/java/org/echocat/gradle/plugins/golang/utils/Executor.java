@@ -90,6 +90,12 @@ public class Executor {
     public Executor env(String name, Object value) {
         if (value == null) {
             _environment.remove(name);
+        } else if (value instanceof File) {
+            _environment.put(name, ((File) value).getAbsolutePath());
+        } else if (value instanceof Path) {
+            _environment.put(name, ((Path) value).toAbsolutePath().toString());
+        } else if (value instanceof org.echocat.gradle.plugins.golang.model.Paths) {
+            _environment.put(name, ((org.echocat.gradle.plugins.golang.model.Paths) value).toAbsoluteString());
         } else {
             _environment.put(name, value.toString());
         }

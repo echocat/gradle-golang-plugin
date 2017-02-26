@@ -70,8 +70,8 @@ public class PrepareToolchain extends GolangTaskSupport {
     protected boolean buildTargetsIfRequired(@Nonnull ProgressLogger progress) throws Exception {
         final GolangSettings settings = getGolang();
         final ToolchainSettings toolchain = getToolchain();
-        final List<Platform> platforms = settings.getParsedPlatforms();
-        if (platforms.isEmpty()) {
+        final List<Platform> platforms = settings.getPlatforms();
+        if (platforms == null || platforms.isEmpty()) {
             throw new IllegalArgumentException("There are no platforms specified.");
         }
         boolean atLeastOneBuild = false;

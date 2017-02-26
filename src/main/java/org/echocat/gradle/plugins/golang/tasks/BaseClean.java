@@ -1,6 +1,7 @@
 package org.echocat.gradle.plugins.golang.tasks;
 
 import org.echocat.gradle.plugins.golang.DependencyHandler;
+import org.echocat.gradle.plugins.golang.model.Paths;
 import org.gradle.internal.logging.progress.ProgressLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,10 +12,9 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-import static java.lang.Boolean.TRUE;
+import static java.lang.Boolean.FALSE;
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.FileVisitResult.SKIP_SUBTREE;
 import static java.nio.file.Files.*;
@@ -87,13 +87,11 @@ public class BaseClean extends GolangTaskSupport {
 
     protected Set<Path> doNotCleanSubTreeOfThisPaths() {
         final Set<Path> results = new HashSet<>();
-        if (TRUE.equals(getBuild().getUseTemporaryGopath())) {
-            final List<Path> paths = getBuild().getGopath();
+        if (!FALSE.equals(getBuild().getUseTemporaryGopath())) {
+            final Paths paths = getBuild().getGopath();
             if (paths != null) {
-                for (final Path gopath : paths) {
-                    final Path packagePath = getGolang().packagePathFor(gopath);
-                    final Path packageVendorPath = packagePath.resolve("vendor");
-                    results.add(packageVendorPath);
+                for (final Path vendorPath : paths.resolve("vendor")) {
+                    results.add(vendorPath);
                 }
             }
         }

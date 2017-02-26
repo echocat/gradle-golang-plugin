@@ -75,7 +75,7 @@ public abstract class VcsRepositorySupport implements VcsRepository {
 
     @Nonnull
     protected Path resolveTargetDirectoryFor(@Nonnull Path baseDirectory) throws VcsException {
-        final Path result = baseDirectory.resolve(getReference().getId());
+        final Path result = baseDirectory.resolve(getReference().getId()).toAbsolutePath();
         try {
             createDirectoriesIfRequired(result);
         } catch (final IOException e) {

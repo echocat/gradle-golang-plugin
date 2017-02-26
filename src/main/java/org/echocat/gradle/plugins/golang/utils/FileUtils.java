@@ -18,6 +18,11 @@ public class FileUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(FileUtils.class);
 
+    @Nullable
+    public static Path toPath(@Nullable String plain) {
+        return plain != null ? Paths.get(plain) : null;
+    }
+
     public static void ensureParentOf(@Nonnull Path path) throws IOException {
         createDirectoriesIfRequired(path.getParent());
     }

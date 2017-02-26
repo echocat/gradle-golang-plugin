@@ -305,7 +305,7 @@ public class DependencyHandler {
         final Path directory = root.resolve(dependency.getGroup());
         if (isDirectory(directory)) {
             for (final Path path : newDirectoryStream(directory, GO_FILENAME_FILTER)) {
-                to.add(path);
+                to.add(path.toAbsolutePath());
             }
         }
     }

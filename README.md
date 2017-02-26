@@ -88,10 +88,6 @@ See [Quick start](#quick-start) for information how to install requirements.
             build 'github.com/urfave/cli'
             test 'github.com/stretchr/testify'
         }
-        build {
-            // Use temporary GOPATH to build everthing in
-            useTemporaryGopath = true
-        }
     }
     ```
 
@@ -114,15 +110,17 @@ See [Quick start](#quick-start) for information how to install requirements.
 group = '' // String - REQUIRED (if golang.packageName is not set)
 
 golang {
+    // Platform of the building host.
+    hostPlatform = '<automatically detected>' // Platform
     // Comma separated list of platforms to build
-    platforms = 'linux-386,linux-amd64,windows-386,windows-amd64,darwin-amd64' // String
+    // If you want multiplatform build just use for example:
+    //    'linux-386,linux-amd64,windows-386,windows-amd64,darwin-amd64'
+    platforms = '<by default same as hostPlatform>' // []Platform
     // Overwrite the package name of 'group' - be useful for overriding settings for 
     // specific tasks.
     packageName = '<same as group>' // String
-    // Platform of the building host. Automatically set by 'validate' task
-    hostPlatform = '<automatically detected>' // Platform
     // Location where to place the go toolchain and other assets temporarily
-    cacheRoot = '~/.go' // Path
+    cacheRoot = '<home directory>/.go' // Path
     
     dependencies {
         // Here you can specify dependencies in Golang familiar way  
@@ -160,10 +158,10 @@ golang {
     build {
         // GOPATH to use for build.
         // Will be replaced with a temporary one if useTemporaryGopath is set to true. 
-        gopath = '${GOPATH}' // Path
+        gopath = '<GOPATH from environment>' // []Path
 
         // If enabled a temporary GOPATH is created to build in. 
-        useTemporaryGopath = false // Boolean
+        useTemporaryGopath = true // Boolean
 
         // Is used to identify sources to be processed 
         includes = [] // []String
@@ -208,19 +206,19 @@ golang {
 
         // Write a coverage profile to the file after all tests have passed.
         // Force call "go test" with "-cover" flag.
-        coverProfile = null // String
+        coverProfile = null // Path
 
         // Write a coverage profile as HTML to the file after all tests have passed.
         // Force call "go test" with "-cover" flag.
-        coverProfileHtml = null // String
+        coverProfileHtml = null // Path
 
         // Will write the test output in the specified file.
         // If set to null this file will not be written.
-        log = "${buildDir}/testing/test.log" // String
+        log = "<buildDir>/testing/test.log" // Path
 
         // Will write the test output in JUnit report format in the specified file.
         // If set to null this file will not be written.
-        junitReport = "${buildDir}/testing/junit_report.xml" // String
+        junitReport = "<buildDir>/testing/junit_report.xml" // Path
     }
     
     toolchain {
@@ -228,7 +226,7 @@ golang {
         forceBuildToolchain = false // Boolean
 
         // Used go version
-        goversion = 'go1.6.2' // String
+        goversion = 'go1.8' // String
 
         // Used GOROOT. This will normally automated detected by validate task
         goroot = '<automatically detected>' // Path
@@ -353,7 +351,7 @@ class VetTask extends org.echocat.gradle.plugins.golang.tasks.GolangTask {
                 // Do not resolve it by your own. Trust the plugin way because it respects
                 // characteristic of every platform and also handle temporary and separated
                 // environments...
-                .env("GOPATH", build.gopathAsString)
+                .env("GOPATH", build.gopath)
                 // Provide the arguments for the command....
                 .arguments("vet", "-x", golang.packageName)
                 // Execute everything. If it fails (with some exit code not equal to 0) the
@@ -396,7 +394,7 @@ class LintTask extends org.echocat.gradle.plugins.golang.tasks.GolangTask {
         // ${toolchain.executableSuffix} to executable string.
         org.echocat.gradle.plugins.golang.utils.Executor.executor("${project.buildDir}/tools/github.com/golang/lint/golint${toolchain.executableSuffix}")
                 .env("GOROOT", toolchain.goroot)
-                .env("GOPATH", build.gopathAsString)
+                .env("GOPATH", build.gopath)
                 // "-set_exit_status" will force lint to fail with exit code 1 if any violation
                 // is found. This will cause the build process to fail in this case.
                 .arguments("-set_exit_status", golang.packageName)

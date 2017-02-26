@@ -7,7 +7,6 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.util.CollectionUtils;
-import org.gradle.util.ConfigureUtil;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -25,6 +24,7 @@ import static org.gradle.util.ConfigureUtil.configure;
 public class DependenciesSettings {
 
     private final boolean _root;
+
     @Nonnull
     private final Project _project;
 

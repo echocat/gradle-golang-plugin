@@ -1,8 +1,11 @@
 package org.echocat.gradle.plugins.golang.tasks;
 
 import org.apache.commons.lang3.StringUtils;
-import org.echocat.gradle.plugins.golang.model.*;
+import org.echocat.gradle.plugins.golang.model.BuildSettings;
+import org.echocat.gradle.plugins.golang.model.GolangDependency;
 import org.echocat.gradle.plugins.golang.model.GolangDependency.Type;
+import org.echocat.gradle.plugins.golang.model.Platform;
+import org.echocat.gradle.plugins.golang.model.ToolchainSettings;
 import org.echocat.gradle.plugins.golang.utils.Executor;
 import org.echocat.gradle.plugins.golang.utils.Executor.ExecutionFailedExceptionProducer;
 import org.gradle.internal.logging.progress.ProgressLogger;
@@ -10,8 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static java.lang.Boolean.TRUE;
 import static java.nio.file.Files.isDirectory;
@@ -54,7 +57,11 @@ public class BuildTask extends GolangTaskSupport {
 
         final ProgressLogger progress = startProgress("Build");
 
-        for (final Platform platform : getGolang().getParsedPlatforms()) {
+        final List<Platform> platforms = getGolang().getPlatforms();
+        if (platforms == null || platforms.isEmpty()) {
+            throw new IllegalArgumentException("There are no platforms specified.");
+        }
+        for (final Platform platform : platforms) {
             executeFor(platform, targetPackage, progress);
         }
 
@@ -69,7 +76,7 @@ public class BuildTask extends GolangTaskSupport {
                 return candidate;
             }
         }
-        throw new IllegalStateException("Project '" + packageName + "' is not part of GOPATH (" + build.getGopathAsString() + ").");
+        throw new IllegalStateException("Project '" + packageName + "' is not part of GOPATH (" + build.getGopath() + ").");
     }
 
     protected void executeFor(@Nonnull Platform platform, @Nonnull GolangDependency targetPackage, @Nonnull ProgressLogger progress) throws Exception {
@@ -82,7 +89,7 @@ public class BuildTask extends GolangTaskSupport {
 
         final Executor executor = executor(toolchain.getGoBinary())
             .workingDirectory(build.getFirstGopath())
-            .env("GOPATH", build.getGopathAsString())
+            .env("GOPATH", build.getGopath())
             .env("GOROOT", toolchain.getGoroot())
             .env("GOOS", platform.getOperatingSystem().getNameInGo())
             .env("GOARCH", platform.getArchitecture().getNameInGo())

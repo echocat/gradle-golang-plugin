@@ -15,16 +15,17 @@ import java.util.regex.Pattern;
 
 import static java.nio.file.Files.isExecutable;
 import static java.util.regex.Pattern.compile;
-import static org.echocat.gradle.plugins.golang.Constants.DEFAULT_DOWNLOAD_URI_ROOT;
-import static org.echocat.gradle.plugins.golang.Constants.DEFAULT_GO_VERSION;
 import static org.echocat.gradle.plugins.golang.model.OperatingSystem.WINDOWS;
 import static org.echocat.gradle.plugins.golang.model.OperatingSystem.currentOperatingSystem;
 import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
+import static org.echocat.gradle.plugins.golang.utils.FileUtils.toPath;
 
 public class ToolchainSettings {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ToolchainSettings.class);
-    protected static final Pattern VERSION_RESPONSE_PATTERN = compile("go version ([0-9\\.\\-_a-z]+) .+");
+    protected static final Pattern VERSION_RESPONSE_PATTERN = compile("go version ([0-9.\\-_a-z]+) .+");
+
+    @SuppressWarnings({"FieldCanBeLocal", "unused"})
     @Nonnull
     private final Project _project;
 
@@ -39,8 +40,8 @@ public class ToolchainSettings {
     public ToolchainSettings(boolean initialize, @Nonnull Project project) {
         _project = project;
         if (initialize) {
-            _goversion = DEFAULT_GO_VERSION;
-            _downloadUriRoot = DEFAULT_DOWNLOAD_URI_ROOT;
+            _goversion = "go1.8";
+            _downloadUriRoot = URI.create("https://storage.googleapis.com/golang/");
         }
     }
 
@@ -68,6 +69,10 @@ public class ToolchainSettings {
         _goroot = goroot;
     }
 
+    public void setGoroot(String goroot) {
+        setGoroot(toPath(goroot));
+    }
+
     public Boolean getCgoEnabled() {
         return _cgoEnabled;
     }
@@ -84,12 +89,20 @@ public class ToolchainSettings {
         _bootstrapGoroot = bootstrapGoroot;
     }
 
+    public void setBootstrapGoroot(String bootstrapGoroot) {
+        setBootstrapGoroot(toPath(bootstrapGoroot));
+    }
+
     public URI getDownloadUriRoot() {
         return _downloadUriRoot;
     }
 
     public void setDownloadUriRoot(URI downloadUriRoot) {
         _downloadUriRoot = downloadUriRoot;
+    }
+
+    public void setDownloadUriRoot(String downloadUriRoot) {
+        setDownloadUriRoot(downloadUriRoot != null ? URI.create(downloadUriRoot) : null);
     }
 
     @Nullable

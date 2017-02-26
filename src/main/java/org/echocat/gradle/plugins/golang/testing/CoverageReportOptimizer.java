@@ -33,11 +33,11 @@ public class CoverageReportOptimizer extends ProjectsAndSettingsEnabledSupport {
     @Nullable
     public Path preHandlePackagesCover() throws IOException {
         final TestingSettings testing = getTesting();
-        Path coverProfile = testing.getCoverProfileFile();
+        Path coverProfile = testing.getCoverProfile();
         if (coverProfile != null && exists(coverProfile)) {
             delete(coverProfile);
         }
-        final Path coverProfileHtml = testing.getCoverProfileHtmlFile();
+        final Path coverProfileHtml = testing.getCoverProfileHtml();
         if (coverProfileHtml != null && coverProfile == null) {
             final Path testingDir = getProject().getBuildDir().toPath().resolve("testing");
             createDirectoriesIfRequired(testingDir);
@@ -49,10 +49,10 @@ public class CoverageReportOptimizer extends ProjectsAndSettingsEnabledSupport {
     public void postHandlePackagesCover(@Nullable Path coverProfile, @Nonnull ProgressLogger progress) throws Exception {
         progress.progress("Post process of covering profiles...");
         final TestingSettings testing = getTesting();
-        final Path coverProfileHtml = testing.getCoverProfileHtmlFile();
+        final Path coverProfileHtml = testing.getCoverProfileHtml();
         if (coverProfileHtml != null && coverProfile != null && exists(coverProfile)) {
             coverToHtml(coverProfile, coverProfileHtml);
-            if (testing.getCoverProfileFile() == null) {
+            if (testing.getCoverProfile() == null) {
                 deleteQuietly(coverProfile);
             }
         }
@@ -64,7 +64,7 @@ public class CoverageReportOptimizer extends ProjectsAndSettingsEnabledSupport {
 
         executor(toolchain.getGoBinary())
             .workingDirectory(build.getFirstGopath())
-            .env("GOPATH", build.getGopathAsString())
+            .env("GOPATH", build.getGopath())
             .env("GOROOT", toolchain.getGoroot())
             .arguments("tool", "cover")
             .arguments("-html", profile)
