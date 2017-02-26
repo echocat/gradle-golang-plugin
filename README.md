@@ -49,7 +49,13 @@ Find more plugins on [Gradle plugin repository](https://plugins.gradle.org/).
 Plugin dependency for your ``build.gradle``
 ```groovy
 plugins {
-  id "org.echocat.golang" version "<latest version of this plugin>"
+    // Use this variant if you use this as primary plugin
+    // In this case every task is simply named like: build, clean, test, ...
+    id 'org.echocat.golang' version '<latest version of this plugin>'
+    // Use this variant if you use this as secondary plugin
+    //    for example if you also use Java in this build file.
+    // In this case every task is simply named like: golangBuild, golangClean, golangTest, ...
+    id 'org.echocat.golang-minor' version '<latest version of this plugin>'
 }
 ```
 
@@ -76,13 +82,7 @@ See [Quick start](#quick-start) for information how to install requirements.
 
     ```groovy
     plugins {
-        // Use this variant if you use this as primary plugin
-        // In this case every task is simply named like: build, clean, test, ...
         id 'org.echocat.golang' version '<latest version of this plugin>'
-        // Use this variant if you use this as secondary plugin
-        //    for example if you also use Java in this build file.
-        // In this case every task is simply named like: golangBuild, golangClean, golangTest, ...
-        id 'org.echocat.golang-minor' version '<latest version of this plugin>'
     }
     
     group 'github.com/my-user/my-project'
