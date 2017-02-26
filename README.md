@@ -76,7 +76,13 @@ See [Quick start](#quick-start) for information how to install requirements.
 
     ```groovy
     plugins {
+        // Use this variant if you use this as primary plugin
+        // In this case every task is simply named like: build, clean, test, ...
         id 'org.echocat.golang' version '<latest version of this plugin>'
+        // Use this variant if you use this as secondary plugin
+        //    for example if you also use Java in this build file.
+        // In this case every task is simply named like: golangBuild, golangClean, golangTest, ...
+        id 'org.echocat.golang-minor' version '<latest version of this plugin>'
     }
     
     group 'github.com/my-user/my-project'
@@ -279,6 +285,9 @@ Run tasks using...
 # On Windows
 gradlew <task> [...]
 ```
+
+> **Hint**: Do not forget that every tasks listed here is prefixed with `golang` and the next
+            letter is capitalized if you use the minor variant of this plugin.
 
 ### ``build``
 

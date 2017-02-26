@@ -49,6 +49,10 @@ pluginBundle {
             id = 'org.echocat.golang'
             displayName = 'Golang Plugin'
         }
+        golangMinorPlugin {
+            id = 'org.echocat.golang-minor'
+            displayName = 'Golang Minor Plugin'
+        }
     }
 
     mavenCoordinates {

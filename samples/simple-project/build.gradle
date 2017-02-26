@@ -2,7 +2,7 @@ import org.echocat.gradle.plugins.golang.tasks.GolangTask
 import org.echocat.gradle.plugins.golang.utils.Executor
 import org.slf4j.*
 /*
-apply plugin: 'org.echocat.golang'
+apply plugin: 'org.echocat.golang-minor'
 
 buildscript {
     repositories {
@@ -43,8 +43,8 @@ golang {
     }
 }
 
-task moo(type: MooTask, dependsOn: test)
-build.dependsOn moo
+task moo(type: MooTask, dependsOn: golangTest)
+golangBuild.dependsOn moo
 
 class MooTask extends GolangTask {
 

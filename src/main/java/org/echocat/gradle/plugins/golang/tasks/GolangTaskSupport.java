@@ -2,11 +2,13 @@ package org.echocat.gradle.plugins.golang.tasks;
 
 import groovy.lang.Closure;
 import org.echocat.gradle.plugins.golang.DependencyHandler;
+import org.echocat.gradle.plugins.golang.GolangPluginSupport;
 import org.echocat.gradle.plugins.golang.model.*;
 import org.echocat.gradle.plugins.golang.utils.ProjectEnabled;
 import org.echocat.gradle.plugins.golang.utils.SettingsEnabled;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.internal.logging.progress.ProgressLogger;
 import org.gradle.internal.logging.progress.ProgressLoggerFactory;
@@ -148,6 +150,29 @@ public abstract class GolangTaskSupport extends DefaultTask implements SettingsE
         progressLogger.setDescription(description);
         progressLogger.started();
         return progressLogger;
+    }
+
+    @Nonnull
+    public String realTaskNameFor(@Nonnull String simpleTaskName) {
+        return GolangPluginSupport.realTaskNameFor(getProject(), simpleTaskName);
+    }
+
+    @Override
+    @Nonnull
+    public Task dependsOn(Object... paths) {
+        if (paths == null || paths.length == 0) {
+            throw new IllegalArgumentException("There are no paths provided.");
+        }
+        final Object[] transformed = new Object[paths.length];
+        for (int i = 0; i < paths.length; i++) {
+            final Object candidate = paths[i];
+            if (candidate instanceof String) {
+                transformed[i] = realTaskNameFor(candidate.toString());
+            } else {
+                transformed[i] = candidate;
+            }
+        }
+        return super.dependsOn(transformed);
     }
 
 }
