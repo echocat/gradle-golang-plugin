@@ -89,6 +89,7 @@ public class BasePrepareSources extends GolangTaskSupport {
     protected void prepareDependencyCacheIfNeeded(Path packagePath, Path dependencyCachePath) throws IOException {
         final Path packageVendorPath = packagePath.resolve("vendor");
 
+        createDirectories(dependencyCachePath);
         if (exists(packageVendorPath)) {
             if (!isDirectory(packageVendorPath) && !isSymbolicLink(packageVendorPath)) {
                 throw new IllegalStateException(packageVendorPath + " already exists but is not a symbolic link.");

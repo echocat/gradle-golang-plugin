@@ -124,7 +124,7 @@ public class GitVcsRepository extends VcsRepositorySupport {
 
     protected void removeGitDirectoryIfNeeded(@Nonnull Path targetDirectory, @Nonnull Git git) throws VcsException {
         git.getRepository().close();
-        deleteQuietly(targetDirectory.resolve(".git"));
+        //deleteQuietly(targetDirectory.resolve(".git"));
     }
 
     @Nonnull

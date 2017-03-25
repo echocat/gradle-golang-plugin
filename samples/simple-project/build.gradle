@@ -2,7 +2,7 @@ import org.echocat.gradle.plugins.golang.tasks.GolangTask
 import org.echocat.gradle.plugins.golang.utils.Executor
 import org.slf4j.*
 /*
-apply plugin: 'org.echocat.golang-minor'
+apply plugin: 'org.echocat.golang'
 
 buildscript {
     repositories {
@@ -10,13 +10,13 @@ buildscript {
         mavenLocal()
     }
     dependencies {
-        classpath "org.echocat.gradle.plugins:gradle-golang-plugin:0.1.15-SNAPSHOT"
+        classpath "org.echocat.gradle.plugins:gradle-golang-plugin:0.1.16-SNAPSHOT"
     }
-}
-*/
+} */
+
 
 plugins {
-  id "org.echocat.golang" version "0.1.14"
+  id "org.echocat.golang" version "0.1.16"
 }
 
 group 'github.com/echocat/gradle-golang-plugin/samples/simple-project'
@@ -33,7 +33,10 @@ golang {
         ]
     }
     dependencies {
+        vcsRepositoryProvider("git", "try.gogs.io/", "Gogs Demo Repository", "^(?<root>try\\.gogs\\.io/[A-Za-z0-9_.\\-]+/[A-Za-z0-9_.\\-]+)(?<subPath>/[A-Za-z0-9_.\\-]+)*\$")
+
         test 'gopkg.in/check.v1'
+        build 'try.gogs.io/rblaubaer/blaubaers-foo'
         tool 'github.com/golang/lint/golint'
         tool 'github.com/jstemmer/go-junit-report'
     }
@@ -43,8 +46,8 @@ golang {
     }
 }
 
-task moo(type: MooTask, dependsOn: golangTest)
-golangBuild.dependsOn moo
+task moo(type: MooTask, dependsOn: test)
+build.dependsOn moo
 
 class MooTask extends GolangTask {
 

@@ -52,7 +52,7 @@ public class BaseClean extends GolangTaskSupport {
                     try {
                         deleteIfExists(file);
                     } catch (final IOException e) {
-                        LOGGER.warn("Could not delete file {}.", file, e);
+                        LOGGER.warn("Could not delete file '{}': {}", file, e.toString());
                     }
                     return CONTINUE;
                 }
@@ -63,7 +63,7 @@ public class BaseClean extends GolangTaskSupport {
                         try {
                             deleteIfExists(dir);
                         } catch (final IOException e) {
-                            LOGGER.warn("Could not delete dir {}.", dir, e);
+                            LOGGER.warn("Could not delete dir '{}': {}.", dir, e.toString());
                         }
                         return SKIP_SUBTREE;
                     }
@@ -72,10 +72,12 @@ public class BaseClean extends GolangTaskSupport {
 
                 @Override
                 public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
-                    try {
-                        deleteIfExists(dir);
-                    } catch (final IOException e) {
-                        LOGGER.warn("Could not delete dir {}.", dir, e);
+                    if (exc == null) {
+                        try {
+                            deleteIfExists(dir);
+                        } catch (final IOException e) {
+                            LOGGER.warn("Could not delete dir '{}': {}.", dir, e.toString());
+                        }
                     }
                     return CONTINUE;
                 }

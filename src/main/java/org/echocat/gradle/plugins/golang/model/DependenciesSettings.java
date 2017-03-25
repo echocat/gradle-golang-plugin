@@ -13,15 +13,20 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.echocat.gradle.plugins.golang.Constants.VENDOR_DIRECTORY_NAME;
+import static org.echocat.gradle.plugins.golang.vcs.VcsType.git;
 import static org.gradle.util.ConfigureUtil.configure;
 
 public class DependenciesSettings {
+
+    protected static final Pattern NOTATION_PATTERN = Pattern.compile("(?<group>[a-zA-Z0-9.\\-_/]+)(?::(?<version>[a-zA-Z0-9.\\-_/]+))?");
 
     private final boolean _root;
 
@@ -32,6 +37,8 @@ public class DependenciesSettings {
     private Boolean _deleteUnknownDependencies;
     private Boolean _deleteAllCachedDependenciesOnClean;
     private Path _dependencyCache;
+
+    private Collection<VcsRepositoryProvider> _vcsRepositoryProviders;
 
     @Inject
     public DependenciesSettings(boolean root, @Nonnull Project project) {
@@ -75,7 +82,42 @@ public class DependenciesSettings {
         _dependencyCache = dependencyCache;
     }
 
-    protected static final Pattern NOTATION_PATTERN = Pattern.compile("(?<group>[a-zA-Z0-9.\\-_/]+)(?::(?<version>[a-zA-Z0-9.\\-_/]+))?");
+    public Collection<VcsRepositoryProvider> getVcsRepositoryProviders() {
+        return _vcsRepositoryProviders;
+    }
+
+    public void setVcsRepositoryProviders(Collection<VcsRepositoryProvider> vcsRepositoryProviders) {
+        _vcsRepositoryProviders = vcsRepositoryProviders;
+    }
+
+    @Nonnull
+    public VcsRepositoryProvider vcsRepositoryProvider(@Nonnull String prefix, @Nonnull String name, @Nonnull String dependencyPattern) {
+        return vcsRepositoryProvider(prefix, name, Pattern.compile(dependencyPattern));
+    }
+
+    @Nonnull
+    public VcsRepositoryProvider vcsRepositoryProvider(@Nonnull String prefix, @Nonnull String name, @Nonnull Pattern dependencyPattern) {
+        return vcsRepositoryProvider(git, prefix, name, dependencyPattern);
+    }
+
+    @Nonnull
+    public VcsRepositoryProvider vcsRepositoryProvider(@Nonnull String type, @Nonnull String prefix, @Nonnull String name, @Nonnull String dependencyPattern) {
+        return vcsRepositoryProvider(VcsType.valueOf(type), prefix, name, Pattern.compile(dependencyPattern));
+    }
+
+    @Nonnull
+    public VcsRepositoryProvider vcsRepositoryProvider(@Nonnull VcsType type, @Nonnull String prefix, @Nonnull String name, @Nonnull Pattern dependencyPattern) {
+        final VcsRepositoryProvider result = new VcsRepositoryProvider(type, prefix, name, dependencyPattern);
+        add(result);
+        return result;
+    }
+
+    public void add(@Nonnull VcsRepositoryProvider vcsRepositoryProvider) {
+        if (_vcsRepositoryProviders == null) {
+            _vcsRepositoryProviders = new ArrayList<>();
+        }
+        _vcsRepositoryProviders.add(vcsRepositoryProvider);
+    }
 
     @Nonnull
     public Dependency add(@Nonnull String configurationName, @Nonnull Object notation) {

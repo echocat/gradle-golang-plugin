@@ -41,7 +41,9 @@ import static org.echocat.gradle.plugins.golang.DependencyHandler.GetResult.alre
 import static org.echocat.gradle.plugins.golang.DependencyHandler.GetResult.downloaded;
 import static org.echocat.gradle.plugins.golang.model.GolangDependency.Type.*;
 import static org.echocat.gradle.plugins.golang.model.GolangDependency.newDependency;
+import static org.echocat.gradle.plugins.golang.model.VcsRepositoryProvider.toConcrete;
 import static org.echocat.gradle.plugins.golang.utils.Executor.executor;
+import static org.echocat.gradle.plugins.golang.vcs.CombinedVcsRepositoryProvider.delegatesWithDefaults;
 import static org.echocat.gradle.plugins.golang.vcs.VcsRepository.Utils.progressMonitorFor;
 
 public class DependencyHandler {
@@ -57,8 +59,7 @@ public class DependencyHandler {
     };
 
     @Nonnull
-    private final VcsRepositoryProvider _vcsRepositoryProvider = new CombinedVcsRepositoryProvider();
-
+    private final VcsRepositoryProvider _vcsRepositoryProvider;
     @Nonnull
     private final ProgressLoggerFactory _progressLoggerFactory;
     @Nonnull
@@ -71,6 +72,8 @@ public class DependencyHandler {
     public DependencyHandler(@Nonnull ProgressLoggerFactory progressLoggerFactory, @Nonnull Settings settings) {
         _progressLoggerFactory = progressLoggerFactory;
         _settings = settings;
+        final List<VcsRepositoryProvider> delegates = toConcrete(settings.getDependencies().getVcsRepositoryProviders());
+        _vcsRepositoryProvider = new CombinedVcsRepositoryProvider(delegatesWithDefaults(delegates));
     }
 
     @Nonnull
@@ -92,7 +95,8 @@ public class DependencyHandler {
                 final RawVcsReference reference = dependency.toRawVcsReference();
                 final VcsRepository repository = _vcsRepositoryProvider.tryProvideFor(reference);
                 if (repository == null) {
-                    throw new RuntimeException("Could not download dependency: " + reference);
+                    throw new IllegalArgumentException("Don't know how to handle dependency '" + reference + "' because there VCS Repository Provider that could handle it.\n" +
+                        "\t\tTry register it under golang.dependencies with vcsRepositoryProvider(...).");
                 }
                 final String normalizedReferenceId = repository.getReference().getId();
                 if (!handledReferenceIds.contains(normalizedReferenceId)) {

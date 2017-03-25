@@ -159,6 +159,18 @@ golang {
 
         // Directory where to cache all dependencies in.
         dependencyCache = 'vendor' // Path
+
+        // Method to register other VCS Repository provider that are not already supported by this plugin.
+        // vcsType:           One of 'git', 'bzr', 'hg' or 'svn'
+        // prefix:            Dependency prefix that identifies this provider.
+        //                    IMPORTANT: Add a slash as suffix.
+        // name:              Name of this provider for display in logs etc.
+        // dependencyPattern: Regular expression (Java compatible) that should match the whole dependency and
+        //                    provides a submatch named <root> which matches the base of the dependency
+        //                    and another submatch named <subPath> that matches potential sub paths.
+        vcsRepositoryProvider('<vcsType>', '<prefix>', '<name>', '<dependencyPattern>')
+        // Example:
+        // vcsRepositoryProvider('git', 'github.com/', 'GitHub', '^(?<root>github\\.com/[A-Za-z0-9_.\\-]+/[A-Za-z0-9_.\\-]+)(?<subPath>/[A-Za-z0-9_.\\-]+)*\$')
     }
 
     build {

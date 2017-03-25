@@ -2,7 +2,6 @@ package org.echocat.gradle.plugins.golang.vcs.isps;
 
 import org.echocat.gradle.plugins.golang.vcs.RawVcsReference;
 import org.echocat.gradle.plugins.golang.vcs.VcsException;
-import org.echocat.gradle.plugins.golang.vcs.VcsType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,12 +21,6 @@ public class GolangOrgVcsRepositoryProvider extends IspBasedVcsRepositoryProvide
 
     public GolangOrgVcsRepositoryProvider() {
         super("golang.org/", compile("^(?<root>golang\\.org/x/(?<repo>[A-Za-z0-9_.\\-]+))(?<subPath>/[A-Za-z0-9_.\\-]+)*$"));
-    }
-
-    @Nonnull
-    @Override
-    protected VcsType detectVcsTypeOf(@Nonnull RawVcsReference rawReference) throws VcsException {
-        return fixedVcsTypeFor(rawReference, git);
     }
 
     @Nonnull
